@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/variables
+source "$HOME/.dotfiles/src/config_files/zsh/variables"
+
+# Preferred CD implementation
+# change directory and list it's contents with exa
+cd() {
+
+  builtin cd "$@" || return
+  exa -lha
+
+  # TODO: Add check to see if exa is installed or not
+
+} # End - cd replacement function

@@ -1,0 +1,277 @@
+#!/bin/bash
+
+# TODO: Add interactive mode if no arguments are supplied
+# TODO: Add ability to add hostname as the first argument while ommiting the '-n' flag
+# TODO: Add section to test the host connection before adding it
+
+# Usage: ssh-add-host -h|--help
+
+# --------------- #
+# -| VARIABLES |- #
+# --------------- #
+
+# Wether or not debug mode is enabled
+# Turning this on will produce more verbose output
+_DEBUG="on"
+
+# Error message to display (if any errors)
+on_error="There was an error adding the host to the ssh config file"
+
+# Config file to append to
+config_file="$HOME/.ssh/config"
+
+# Default behavior
+hostname=""
+host_address=""
+user="rootr"
+
+ssh_dir="$HOME/.ssh"
+id_file_name="id_ed25519"
+id_file="$ssh_dir/$id_file_name"
+
+# Wording to use if there are/is a missing argument(s)
+wording="are some missing arguments"
+
+# --------------------------- #
+# -|       FUNCTIONS       |- #
+# --------------------------- #
+
+# Fucntion to run when in debug mode
+# will not proceed with the command if not in DEBUG mode
+IN_DEBUG() {
+
+  # Check if we're in DEBUG mode
+  if [ "$_DEBUG" == "on" ]; then
+
+    # Since DEBUG mode is enabled, run the argument
+    "$@"
+
+  fi
+
+}
+
+# Function to print the usage information
+usage() {
+
+  printf "
+Usage: \033[1mssh-add-host\033[0m \033[1m-n\033[0m NAME \033[1m-a\033[0m HOST_ADDRESS [\033[1m-u\033[0m USERNAME] [\033[1m-i\033[0m PATH_TO_ID]
+
+Add new host to ssh config. If no arguments are given, runs in an interactive mode (coming soon)
+
+\033[2mOptions:\033[0m
+  \033[1m-h\033[0m|\033[1m--help\033[0m  Display this usage help
+
+  \033[1m-n\033[0m|\033[1m--name\033[0m  Name to give the new host            \033[0;31m(required)\033[0m
+  \033[1m-a\033[0m|\033[1m--ip\033[0m    Address to the new host              \033[0;31m(required)\033[0m
+  \033[1m-u\033[0m|\033[1m--user\033[0m  Username on the new host             \033[0;36m[DEFAULT]\033[0m: %s
+  \033[1m-i\033[0m|\033[1m--id\033[0m    Filename of the identity file to use \033[0;36m[DEFAULT]\033[0m: %s
+             \033[2m(Note: ID file must be located in the ~/.ssh folder)\033[0m\n" "$user" "$id_file_name"
+
+}
+
+# A function to check if any required arguments are missing
+check_args() {
+
+  # List of missing arguments
+  declare -a missing_args=()
+
+  # Check if any of the required arguments are missing
+  if [ -z "$hostname" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t\033[0;31m[ERROR]\033[0m: Hostname is required but was not provided \033[2m\t(tip: Use \033[0m\033[1m-n\033[0m|\033[1m--name\033[2m to designate the hostname)\033[0m\n")
+
+  fi
+
+  if [ -z "$host_address" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t\033[0;31m[ERROR]\033[0m: Host Address is required but was not provided \033[2m\t(tip: Use \033[0m\033[1m-a\033[0m|\033[1m--ip\033[2m to designate the host address)\033[0m\n")
+
+  fi
+
+  # Check if there are any errors in the missing args array
+  if [ ${#missing_args[@]} -ne 0 ]; then
+
+    # Check if there are multiple missing arguments or just one
+    if [ ${#missing_args[@]} -lt 2 ]; then
+
+      wording="is a missing argument"
+
+    fi
+
+    # There are missing arguments, print the errors
+    printf "\033[0;31m[There %s]\033[0m\n" "$wording"
+
+    # Add a separator for easier readability
+    echo -e "\n---------------------------------------------------------------\n"
+
+    echo -e "${missing_args[@]}"
+
+    # Add a separator for easier readability
+    echo -e "---------------------------------------------------------------"
+
+    # Print the usage / help information
+    usage
+
+    # Exit with an error
+    exit 1
+
+  fi
+
+}
+
+# ---------------------- #
+# -| ARGUMENT PARSING |- #
+# ---------------------- #
+
+# Check if there are any arguments provided
+if [ $# -ne 0 ]; then
+
+  # Transform long options to short ones
+  for arg in "$@"; do
+    shift
+    case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+    "--name") set -- "$@" "-n" ;;
+    "--ip") set -- "$@" "-a" ;;
+    "--user") set -- "$@" "-u" ;;
+    "--id") set -- "$@" "-i" ;;
+    "--debug") set -- "$@" "-d" ;;
+    *) set -- "$@" "$arg" ;;
+    esac
+  done
+
+  # Parse short options
+  OPTIND=1
+  while getopts ":hn:a:u:i:d" opt; do
+
+    case "$opt" in
+    "h")
+      usage
+      exit 0
+      ;; # Print the help / usage information
+    "n") hostname="$OPTARG" ;;
+    "a") host_address="$OPTARG" ;;
+    "u") user="$OPTARG" ;;
+    "i") id_file_name="$OPTARG" ;;
+    "d") _DEBUG="on" ;;
+    # Unrecognized option
+    \?)
+
+      # Let them know we have an unrecognized option
+      echo -e "${FUNCNAME[0]}: ${RED}unrecognized option${NOSTYLE} --> $OPTARG\n"
+
+      # Print the usage information
+      usage
+      exit 1
+      ;;
+    :)
+
+      # Signal that one of the options requires an argument and is missing it
+      echo -e "${RED}[ERROR]:${NOSTYLE} Option -$OPTARG requires a argument/value" >&2
+
+      exit 1
+      ;;
+    esac
+
+  done
+
+# If no arguments were provided
+else
+
+  check_args
+
+  # And exit with an error
+  exit 1
+
+fi
+
+# Remove options from positional parameters
+shift "$((OPTIND - 1))"
+
+# Check the arguments to make sure we're not missing any
+check_args
+
+# ----------------- #
+# -| MAIN SCRIPT |- #
+# ----------------- #
+
+# Let the user know we're checking the id file
+IN_DEBUG printf "\nChecking OpenSSH ID file... "
+
+# Check if the id file exist
+if [ -f "$id_file" ]; then
+
+  # Let the user know the file exists
+  IN_DEBUG printf "\033[0;32m[ID File Exists]\033[0m\n"
+
+  # Let them know we're verifying that it's a valid OpenSSH private key
+  IN_DEBUG printf "Checking validity of OpenSSH private key file... "
+
+  # It exists, let's check if it's a valid openSSH private key or not
+  if grep "BEGIN OPENSSH PRIVATE KEY" "$id_file" >/dev/null 2>&1; then
+
+    # The file is a valid openSSH private key
+    IN_DEBUG printf "\033[0;32m[File is Valid]\033[0m\n"
+
+  else
+
+    # Not a valid openSSH private key
+    printf "\033[0;31m[Error]: Not a valid OpenSSH private key\033[0m --> '%s'\n" "$id_file"
+    exit 1
+
+  fi
+
+else
+
+  # The OpenSSH ID file doesn't exist
+  printf "\033[0;31m[Error]: OpenSSH ID file not found at '%s'\033[0m\n" "$id_file"
+  exit 1
+
+fi
+
+IN_DEBUG printf "Adding \"%s\" host to '%s'... " "$hostname" "$config_file"
+
+# Whether or not we have a newline at the end of $config_file
+# 0 = there IS NO trailing newline
+# 1 = there IS a trailing newline
+has_newline=$(tail -1 "$config_file" | wc -l | awk '{ print $1 }')
+
+# Check if the config file has a trailing newline or not
+if [ "$has_newline" -eq 0 ]; then
+
+  # We do not have a trailing newline at the end of $config_file
+  # Add an extra newline character to the end of the file for readability
+  printf "\n" >>"$config_file"
+
+fi
+
+# Add the host info to the end of the $config_file
+# Check to make sure the command goes through
+if printf "\nHost %s\n  HostName %s\n  User %s\n  IdentityFile %s\n" "$hostname" "$host_address" "$user" "$id_file" >>"$config_file"; then
+
+  # Successfully ran the command
+  IN_DEBUG printf "\033[0;32m[Done]\033[0m\n"
+
+  # Now print the host we just added
+  printf "\n------------------------------------\n"
+  printf "      Successfully added host"
+  printf "\n------------------------------------\n\n"
+  tail -n4 "$config_file"
+  printf "\n\n------------------------------------"
+
+  # TODO: Add section to ask to copy the SSH key to the host machine
+
+# Otherwise, if there was an error
+else
+
+  # Grab the exit code from the previous command
+  exit_code=$?
+
+  # Signal that there was an error
+  IN_DEBUG printf "\033[0;31m[Error]: [%s]\033[0m\n" "$exit_code"
+  printf "\n\033[0;31m[Error]: %s\n" "$on_error"
+  return "$exit_code"
+
+fi

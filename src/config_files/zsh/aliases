@@ -1,0 +1,41 @@
+#!/bin/env bash
+
+# shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/variables
+source "$HOME/.dotfiles/src/config_files/zsh/variables"
+
+# shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/functions
+source "$HOME/.dotfiles/src/config_files/zsh/functions"
+
+# -----------------------------
+#     MAKE TERMINAL BETTER
+# -----------------------------
+
+alias ll='exa -lha'
+
+alias c='clear'
+alias cll='c;ll'
+alias ccd='c;cd'
+
+alias ..='cd ../'
+alias ...='cd ../../'
+alias .3='cd../../../'
+alias .4='cd ../../../../'
+alias .5='cd ../../../../../'
+alias .6='cd ../../../../../../'
+alias ~='cd ~/'
+alias cdssh='cd ~/.ssh'
+alias icloud='cd ~/Library/Mobile\ Documents\com~apple~CloudDocs/'
+
+alias fopen='open -a Finder ./'
+alias urc=". ~/\$CONFIGRC"
+
+# Count non-hidden files in cwd
+alias count='ls -1 | wc -l'
+
+# Get current public IP address
+alias getpip='curl -ks https://ipinfo.io/ip'
+
+# Grep with color
+alias grep='grep --color=always'
+
+alias path='echo -e ${PATH//:/\\n}'

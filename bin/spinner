@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Check if there is a supplied argument or not
+if [ -z "$1" ]; then
+  # No argument was supplied
+  echo 2>&1 -e "${RED}[ERROR]${NOSTYLE} At least 1 command is required"
+  exit 1
+fi
+
+subcommand_help() {
+  echo -ne "${GREEN}Available Commands${NOSTYLE}"
+}
+
+spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# shellcheck disable=SC2120
+subcommand_show() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  local _SPIN_PID=$!
+
+  # Return the Spinner PID
+  return "$_SPIN_PID"
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+# Requires that the _SPIN_PID be passed as an argument
+subcommand_stop() {
+
+  # Check if we were passed an argument or not
+  if [ -z "$1" ]; then
+    # We were not passed an argument
+    echo >&2 -e "\n\n${RED}Missing Spinner PID in arguments${NOSTYLE}\n\n"
+    exit 1
+  fi
+
+  # Check to make sure the Spinner PID is a valid process ID
+  if ! ps -p "$1" >/dev/null 2>&1; then
+    # Process is not valid or not found
+    echo >&2 -e "${RED}[ERROR]${NOSTYLE}: Spinner PID not valid or not found"
+    exit 1
+  fi
+
+  # Check if the _SPIN_PID process is still running or not
+  if ! kill "$1" >/dev/null 2>&1; then
+
+    # Unable to kill the process
+    # possiblly due to it not existing
+    echo -e "${RED}[ERROR]${NOSTYLE}: There was an error killing the spinner process: $?"
+
+  fi
+
+}
+
+# Get the specified subcommand
+subcommand="$1"
+case $subcommand in
+"-h" | "--help")
+  # Print usage information
+  subcommand_help
+  ;;
+*)
+  # Shift the arguments by 1
+  # so $2 is not $1
+  shift
+
+  # Attempt to run the subcommand (if it exists)
+  subcommand_"${subcommand}" "$@"
+  # Check if the subcommand ran successfully or not
+  if [ $? = 127 ]; then
+    # Not a valid subcommand
+    echo >&2 -e "${RED}[NOT FOUND]${NOSTYLE}: '$subcommand' is not a known subcommand"
+    echo >&2 -e "   Run spinner --help for a list of known subcommands"
+    exit 1
+  fi
+  ;;
+esac

@@ -1,0 +1,534 @@
+#!/bin/bash
+# ==========================================
+# --------------| TEST-HOST |---------------
+# ------------------------------------------
+# A script to test a large number of URLs
+# at a host provided a host and port number
+# ------------------------------------------
+# Usage: test-host [-h | --help] -n <TEST_NAME> -a <IP_ADDRESS> [-p <PORT>] [-o <OUTPUT_DIR>] [-w <FILE_PATH>]
+# Usage: test-host [-h | --help] --name <TEST_NAME> --ip <IP_ADDRESS> [--port <PORT>] [--output <OUTPUT_DIR>] [--wordlist <FILE_PATH>]
+#
+# Test different URLs against a host from a list of directories and filenames
+#
+# Options:
+#  -h, --help  Display this usage help
+#  -d, --debug Enable debug mode and output more verbosely
+#
+#   -p, --port <PORT>            Port number to use for the tests           [DEFAULT]: 80
+#   -a, --ip <IP_ADDRESS>        Host address to test against               (required)
+#   -n, --name <TEST_NAME>       Name     of the logs directory             (required)
+#   -o, --output <OUTPUT_DIR>    Location to save the logs                  [DEFAULT]: ~/
+#   -w, --wordlist <FILE_PATH>   Wordlist to test with (newline separated)  [DEFAULT]: Filenames_or_Directories_All.wordlist
+#
+#   (NOTE: Default wordlist is in ~/.dotfiles/src/config_files/zsh/test-host/wordlists/)
+# ----------------------------------------------------------------------------
+# Copyright 2021 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions: The
+# above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
+
+# --------------- #
+# -| VARIABLES |- #
+# --------------- #
+
+# Name of the script
+_SCRIPT_NAME=$(basename "$0")
+
+# PID of the show_spinner function
+# Used to stop/kill the spinner when the test is complete
+_SPIN_PID=""
+
+# Timeout in seconds for testing the ssh connection
+connection_test_timeout=2
+
+# --------------------- #
+# -| DEFAULT OPTIONS |- #
+# --------------------- #
+
+# Wether or not debug mode is enabled
+# Setting this to "true" will produce more verbose output
+# Can also be enabled with the -d|--debug flag
+# ------------------------------------------------
+# Usage: test-host -d|--debug
+# ------------------------------------------------
+# Available options to enable: "on", "enabled", "true"
+# ------------------------------------------------
+_DEBUG="false"
+
+# Hostname to test
+# ------------------------------------------------
+# Any host/IP you can run with curl
+# ------------------------------------------------
+# Usage: test-host -a|--ip 10.0.0.71
+# ------------------------------------------------
+host=""
+
+# Name of the directory to store the log files
+# ------------------------------------------------
+# - Will contain the following files:
+# - error.log
+# - success.log
+# We're also create this dir if it doesn't exist
+# We'll put dirs in that for each subsequent test
+# ------------------------------------------------
+# Usage: test-host -n|--name "my-first-test"
+# ------------------------------------------------
+test_name=""
+
+# Port to use for the connections
+# ------------------------------------------------
+# Usage: test-host -p|--port
+# ------------------------------------------------
+port="80"
+
+# Directory to create/use the log files dir
+# ------------------------------------------------
+# Usage: test-host -o|--output
+# ------------------------------------------------
+output_dir="$HOME"
+
+# Wordlist file to test against
+# ------------------------------------------------
+# - Each word must be separated by a newline
+# ------------------------------------------------
+# Usage: test-host -w|--wordlist path/to/wordlist_file
+# ------------------------------------------------
+wordlist="$CONFIG_DIR/src/config_files/zsh/test-host/wordlists/Filenames_or_Directories_All.wordlist"
+
+# Log file to write to on successes
+log_name_success="success.log"
+
+# Logfile to write to on errors
+log_name_error="error.log"
+
+# -------------------- #
+# -| ERROR MESSAGES |- #
+# -------------------- #
+
+# [ERROR] Unrecognized option
+# ------------------------------------------------
+# Title of the error to dispaly for the
+# "unrecognized option" error.
+# ------------------------------------------------
+error_unrecgonized_option="unrecognized option"
+
+# Error messages for absent require arguments
+error_test_name_missing="Test name is required but was not provided"
+error_host_missing="Host address is required but was not provided"
+error_port_missing="Port is required but was not provided"
+error_output_dir_missing="Output directory is required but was not provided"
+error_wordlist_missing="Wordlist is required but was not provided"
+
+# Error messages for invalid arguments
+error_output_dir_invalid="Output directory is not a valid directory (ensure it exists and check for typos)"
+error_wordlist_invalid="Wordlist file is not valid (ensure it exists and check for typos)"
+
+# --------------------------- #
+# -|       FUNCTIONS       |- #
+# --------------------------- #
+
+# Fucntion to run when in debug mode
+# will not proceed with the command if not in DEBUG mode
+IN_DEBUG() {
+
+  # Check if we're in DEBUG mode
+  if [ "$_DEBUG" == "true" ] || [ "$_DEBUG" == "on" ] || [ "$_DEBUG" == "enabled" ]; then
+
+    # Since DEBUG mode is enabled, run the argument
+    "$@"
+
+  fi
+
+}
+
+spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# shellcheck disable=SC2120
+show_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  _SPIN_PID=$!
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+stop_spinner() {
+
+  # Check if the _SPIN_PID process is still running or not
+  if ps -p "$_SPIN_PID" >/dev/null; then
+
+    # Kill the spinner PID
+    kill $_SPIN_PID
+
+  fi
+
+}
+
+# Function to print the usage information
+usage() {
+
+  local wordlist_file
+  local wordlist_dir
+
+  wordlist_file=$(basename "$wordlist")
+  wordlist_dir=$(dirname "$wordlist")
+
+  echo -e "
+
+  Usage: test-host [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-d${NOSTYLE} | ${BOLD}--debug${NOSTYLE}] ${BOLD}-n${NOSTYLE} ${ITALIC}<TEST_NAME>${NOSTYLE} ${BOLD}-a${NOSTYLE} ${ITALIC}<IP_ADDRESS>${NOSTYLE} [${BOLD}-p${NOSTYLE} ${ITALIC}<PORT>${NOSTYLE}] [${BOLD}-o${NOSTYLE} ${ITALIC}<OUTPUT_DIR>${NOSTYLE}] [${BOLD}-w${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}]
+
+  Usage: test-host [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-d${NOSTYLE} | ${BOLD}--debug${NOSTYLE}] ${BOLD}--name${NOSTYLE} ${ITALIC}<TEST_NAME>${NOSTYLE} ${BOLD}--ip${NOSTYLE} ${ITALIC}<IP_ADDRESS>${NOSTYLE} [${BOLD}--port${NOSTYLE} ${ITALIC}<PORT>${NOSTYLE}] [${BOLD}--output${NOSTYLE} ${ITALIC}<OUTPUT_DIR>${NOSTYLE}] [${BOLD}--wordlist${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}]
+
+  Test different URLs from a list of directories and filenames against the provided host via the provided port
+
+  ${DIM}Options:${NOSTYLE}
+    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}  Display this usage help
+    ${BOLD}-d${NOSTYLE}, ${BOLD}--debug${NOSTYLE} Enable debug mode and output more verbosely
+
+    ${BOLD}-p${NOSTYLE}, ${BOLD}--port${NOSTYLE} ${ITALIC}<PORT>${NOSTYLE}          Port number to use for the tests           ${CYAN}[DEFAULT]${NOSTYLE}: 80
+    ${BOLD}-a${NOSTYLE}, ${BOLD}--ip${NOSTYLE} ${ITALIC}<IP_ADDRESS>${NOSTYLE}      Host address to test against               ${RED}(required)${NOSTYLE}
+    ${BOLD}-n${NOSTYLE}, ${BOLD}--name${NOSTYLE} ${ITALIC}<TEST_NAME>${NOSTYLE}     Name of the logs directory                 ${RED}(required)${NOSTYLE}
+    ${BOLD}-o${NOSTYLE}, ${BOLD}--output${NOSTYLE} ${ITALIC}<OUTPUT_DIR>${NOSTYLE}  Location to save the logs                  ${CYAN}[DEFAULT]${NOSTYLE}: ~/
+    ${BOLD}-w${NOSTYLE}, ${BOLD}--wordlist${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE} Wordlist to test with (newline separated)  ${CYAN}[DEFAULT]${NOSTYLE}: $wordlist_file
+
+    ${DIM}(NOTE: Default wordlist is in $wordlist_dir/)${NOSTYLE}"
+
+}
+
+# A function to check if any required arguments are missing
+check_args() {
+
+  # List of missing arguments
+  local -a missing_args=()
+
+  # Check if the test_name argument was provided
+  if [ -z "$test_name" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_test_name_missing ${DIM}\t\t(tip: Use ${NOSTYLE}${BOLD}-n${NOSTYLE}|${BOLD}--name${DIM} o designate the name for the test)${NOSTYLE}\n")
+
+  fi
+
+  # Check if the host argument was provided
+  if [ -z "$host" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_host_missing ${DIM}\t\t(tip: Use ${NOSTYLE}${BOLD}-a${NOSTYLE}|${BOLD}--ip ${DIM}to designate the host address)${NOSTYLE}\n")
+
+  fi
+
+  # Check if the port argument was provided
+  if [ -z "$port" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_port_missing ${DIM}\t\t\t(tip: Use ${NOSTYLE}${BOLD}-p${NOSTYLE}|${BOLD}--port ${DIM}to designate the port)${NOSTYLE}\n")
+
+  fi
+
+  # Check if the output_dir argument was provided
+  if [ -z "$output_dir" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_output_dir_missing ${DIM}\t(tip: Use ${NOSTYLE}${BOLD}-o${NOSTYLE}|${BOLD}--output ${DIM}to designate the host address)${NOSTYLE}\n")
+
+  # Check if the output_dir is a valid dir
+  elif [ ! -d "$output_dir" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_output_dir_invalid ${DIM}\t(tip: Use ${NOSTYLE}${BOLD}-o${NOSTYLE}|${BOLD}--output ${DIM}to designate the host address)${NOSTYLE}\n")
+
+  fi
+
+  # Check if the wordlist argument was provided
+  if [ -z "$wordlist" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_wordlist_missing ${DIM}\t(tip: Use ${NOSTYLE}${BOLD}-a${NOSTYLE}|${BOLD}--wordlist ${DIM}to designate the wordlist to use)${NOSTYLE}\n")
+
+  # Check if wordlist is a valid file
+  elif [ ! -f "$wordlist" ]; then
+
+    # Add to the errors array
+    missing_args+=("\t${RED}[ERROR]${NOSTYLE}: $error_wordlist_invalid ${DIM}\t(tip: Use ${NOSTYLE}${BOLD}-a${NOSTYLE}|${BOLD}--wordlist ${DIM}to designate the wordlist to use)${NOSTYLE}\n")
+
+  fi
+
+  local wording="are some missing arguments"
+
+  # Check if there are any errors in the missing args array
+  if [ ${#missing_args[@]} -ne 0 ]; then
+
+    # Check if there are multiple missing arguments or just one
+    if [ ${#missing_args[@]} -lt 2 ]; then
+
+      wording="is a missing argument"
+
+    fi
+
+    # There are missing arguments, print the errors
+    echo -e "${RED}[There $wording]${NOSTYLE}\n"
+
+    # Add a separator for easier readability
+    echo -e "---------------------------------------------------------------\n"
+
+    echo -e "${missing_args[@]}"
+
+    # Add a separator for easier readability
+    echo -e "---------------------------------------------------------------"
+
+    # Print the usage / help information
+    usage
+
+    # Exit with an error
+    exit 1
+
+  else
+
+    # Are no missing required arguments
+    echo -ne "Checking connection to host... "
+
+    show_spinner
+
+    # Test to see if we can connect to the host using the provided port number and address
+    if timeout $connection_test_timeout bash -c "</dev/tcp/$host/$port" >/dev/null 2>&1; then
+
+      stop_spinner
+
+      # Successfully connected
+      echo -ne "${GREEN}[SUCCESS]${NOSTYLE}\n"
+
+    # Otherwise, if the connection test failed
+    else
+
+      stop_spinner
+
+      echo -ne "${RED}[ERROR]${NOSTYLE}: Connection to host failed\n"
+
+      # Print additional info while in DEBUG MODE
+      IN_DEBUG echo -ne "\n|--> Unable to connect to host over port '${UNDERLINE}$port${NOSTYLE}'"
+      IN_DEBUG echo -ne "\n|--> Connection to '${UNDERLINE}$host${NOSTYLE}' failed over port '${UNDERLINE}$port${NOSTYLE}'\n"
+
+      # Exit with an error
+      exit 1
+
+    fi
+
+  fi
+
+}
+
+# ---------------------- #
+# -| ARGUMENT PARSING |- #
+# ---------------------- #
+
+# Check if there are any arguments provided
+if [ "$#" -ne 0 ]; then
+
+  # There are arguments provided
+  # Transform long options to short ones
+  for arg in "$@"; do
+
+    shift
+
+    case "$arg" in
+    "--help") set -- "$@" "-h" ;;
+    "--ip") set -- "$@" "-a" ;;
+    "--port") set -- "$@" "-p" ;;
+    "--name") set -- "$@" "-n" ;;
+    "--output") set -- "$@" "-o" ;;
+    "--wordlist") set -- "$@" "-w" ;;
+    "--debug") set -- "$@" "-d" ;;
+    *) set -- "$@" "$arg" ;;
+
+    esac
+
+  done
+
+  # Parse short options
+  while getopts ":hdp:n:o:w:a:" options; do
+
+    # Check the different flags
+    case $options in
+    # Dispaly the usage information
+    "h")
+      usage
+      exit 0
+      ;;
+    "d") _DEBUG="true" ;;
+    "n") test_name="$OPTARG" ;;
+    "a") host="$OPTARG" ;;
+      # Get the port number
+      # Default: 8080
+    "p") port="$OPTARG" ;;
+    "o") output_dir="$OPTARG" ;;
+    "w") wordlist="$OPTARG" ;;
+    # Unrecognized option
+    \?)
+
+      # Let them know we have an unrecognized option
+      echo -e "${BOLD}$_SCRIPT_NAME${NOSTYLE}: ${RED}$error_unrecgonized_option${NOSTYLE} --> $OPTARG" >&2
+
+      # Print the usage information
+      usage
+
+      # Exit with an error
+      exit 1
+      ;;
+    :)
+
+      # Signal that one of the options requires an argument and is missing it
+      echo -e "${BOLD}$_SCRIPT_NAME${NOSTYLE}: ${RED}[ERROR]:${NOSTYLE} Option -$OPTARG requires an argument" >&2
+
+      # Print the usage information
+      usage
+
+      # Exit with an error
+      exit 1
+      ;;
+    esac
+
+  done
+
+# Otherwise, if no arguments were supplied
+else
+
+  # Check if all the required arguments are present
+  # and display the appropriate errors
+  check_args
+
+fi
+
+# Remove the processed arguments
+shift $((OPTIND - 1))
+
+# ----------------- #
+# -| MAIN SCRIPT |- #
+# ----------------- #
+
+# Check if all the required arguments are present
+# and display the appropriate errors
+check_args
+
+# Check if the logs directory exists or not
+if [ ! -d "$output_dir/$test_name" ]; then
+
+  # TODO: Ensure this directory gets created before proceeding
+
+  # It doesn't exist so we'll create it
+  mkdir -p "$output_dir/$test_name"
+
+fi
+
+# Loop through each line of the wordlist
+while IFS='' read -r word; do
+
+  # TODO: Add recursive search if a directory is found
+
+  # Create the new URL based on the current line
+  url_to_test="$host:$port"
+
+  # Let them know we've started the test
+  echo -ne "${NOSTYLE}Testing '$url_to_test/${ORANGE}$word${NOSTYLE}... "
+
+  # Start showing the spinner animation
+  show_spinner
+
+  # Check if the curl fetch fails or not
+  if test_contents=$(curl -ks "$url_to_test/$word"); then
+
+    stop_spinner
+
+    # We got a successful "connection" via curl
+    echo -ne "${GREEN}[Connected]${NOSTYLE} "
+
+    # Check if we get a 404 page or not
+    if [[ "$test_contents" != *"404 - Not Found"* ]]; then
+
+      # Let them know it successfully found a working page
+      echo -ne "${GREEN}[Success]${NOSTYLE}\n"
+
+      # Append the successful URLs to the success.log
+      echo "Successfully connected to '$url_to_test'" >>"$output_dir/$test_name/$log_name_success"
+
+      # TODO: If a non-404 page is found, look for any URLs in the HTML content
+
+    # Otherwise, if we did hit a 404 page
+    else
+
+      stop_spinner
+
+      # Let them know it hit a 404 page
+      echo -ne "${RED}[404 Error]${NOSTYLE}\n"
+
+    fi
+
+  # Otherwise, if the curl "connection" failed
+  else
+
+    # Let them know it failed
+    echo -ne "${RED}[Curl Failed]: $?${NOSTYLE}\n"
+
+    # Append the successful URLs to the success.log
+    echo "cURL failed for '$url_to_test'" >>"$output_dir/$test_name/$log_name_error"
+
+  fi
+
+done <"$wordlist"

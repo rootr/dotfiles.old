@@ -1,0 +1,71 @@
+#!/bin/env bash
+
+# -------------------------------
+#        GLOBAL VARIABLES
+# -------------------------------
+
+export NOSTYLE='\033[0m'
+
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export ORANGE='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CYAN='\033[0;36m'
+export LIGHTGRAY='\033[0;37m'
+export DARKGRAY='\033[1;30m'
+export LIGHTRED='\033[1;31m'
+export LIGHTGREEN='\033[1;32m'
+export YELLOW='\033[1;33m'
+export LIGHTBLUE='\033[1;34m'
+export LIGHTPURPLE='\033[1;35m'
+export LIGHTCYAN='\033[1;36m'
+export WHITE='\033[1;37m'
+
+export BOLD='\033[1m'
+export DIM='\033[2m'
+export ITALIC='\033[3m'
+export UNDERLINE='\033[4m'
+export BLINKING='\033[5m'
+export REVERSE='\033[7m'
+export INVISIBLE='\033[8m'
+
+# -------------------------------
+#    ENVIRONMENT CONFIGURATION
+# -------------------------------
+
+# Global options
+# ------------------------------------------------------------
+
+# The shell config file of choice
+export CONFIGRC='.zshrc'
+
+# Directory containing the config file modules
+export CONFIG_DIR="$HOME/.dotfiles"
+
+# Set Paths
+# ------------------------------------------------------------
+
+# General paths
+export PATH="$PATH:/usr/local/bin:usr/local:/usr/local/sbin"
+
+# MySQL
+export PATH="$PATH:/usr/local/mysql/bin"
+
+# Set the default editor in Terminal
+export EDITOR="/usr/bin/nano"
+
+# git
+export PATH="$PATH:/usr/local/git/bin:/sw/bin"
+
+# Python
+export PATH="$PATH:$HOME/Library/Python/3.8/bin"
+
+# Global Composer PATH
+export PATH="$PATH:$HOME/.composer/vender/bin"
+
+# Global Node PATH
+export NODE_PATH="/usr/local/lib/node_modules"
+
+# .dotfiles bin path (custom scripts)
+export PATH="$CONFIG_DIR/bin:$PATH"

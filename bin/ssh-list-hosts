@@ -1,0 +1,402 @@
+#!/bin/bash
+# ==========================================
+# -----------| SSH-LIST-HOSTS |-------------
+# ------------------------------------------
+# A script that scans the ~/.ssh/config file
+# (or a provided file) and prints the hosts
+# from within that file.
+# ------------------------------------------
+# NOTE: File must be in the format below:
+# Host name-of-host
+#   Hostname 10.0.0.127
+#   User username_on_host-server
+#   IdentityFile path/private/ssh/key
+# ------------------------------------------
+# Usage: ssh-list-hosts [-h | --help] [-d | --debug] [-c <FILE_PATH> | --config <FILE_PATH>]
+#
+# List current hosts from the ssh config file
+#
+# Options:
+#  -h, --help  Display this usage help
+#  -d, --debug Enable debug mode and output more verbosely
+#
+#  -c, --config <FILE_PATH>  Config file to list hosts from     [DEFAULT]: ~/.ssh/config
+#  -t, --test                Whether or not to also test hosts  [DEFAULT]: false
+# ----------------------------------------------------------------------------
+# Copyright 2021 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions: The
+# above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
+
+# --------------- #
+# -| VARIABLES |- #
+# --------------- #
+
+# Wether or not debug mode is enabled
+# Setting this to "true" will produce more verbose output
+# Can also be enabled with the -d|--debug flag
+# ------------------------------------------------
+# Usage: ssh-add-host -d|--debug
+# ------------------------------------------------
+# Available options to enable: "on", "enabled", "true"
+# ------------------------------------------------
+_DEBUG="false"
+
+# PID of the show_spinner function
+# Used to stop/kill the spinner when the test is complete
+_SPIN_PID=""
+
+# Timeout in seconds for testing the ssh connection
+connection_test_timeout=2
+
+# Port to use to test the connections
+test_port=22
+
+# Variables that change throughout the loop
+name=""
+host=""
+user=""
+id_file=""
+
+# Will contain the data to output
+output_row=""
+
+# --------------------- #
+# -| DEFAULT OPTIONS |- #
+# --------------------- #
+
+# Config file to look for hosts in
+# ------------------------------------------------
+# Usage: ssh-list-hosts -c|--config PATH/TO/CONFIG
+# ------------------------------------------------
+config_file="$HOME/.ssh/config"
+
+# Whether or not to test the host connections
+# ------------------------------------------------
+# Usage: ssh-list-hosts -t|--test
+# ------------------------------------------------
+host_testing="false"
+
+# -------------------- #
+# -| ERROR MESSAGES |- #
+# -------------------- #
+
+# [ERROR] Unrecognized option
+# ------------------------------------------------
+# Title of the error to dispaly for the
+# "unrecognized option" error.
+# ------------------------------------------------
+error_unrecgonized_option="unrecognized option"
+
+# --------------------------- #
+# -|       FUNCTIONS       |- #
+# --------------------------- #
+
+# Fucntion to run when in debug mode
+# will not proceed with the command if not in DEBUG mode
+IN_DEBUG() {
+
+  # Check if we're in DEBUG mode
+  if [ "$_DEBUG" == "on" ]; then
+
+    # Since DEBUG mode is enabled, run the argument
+    "$@"
+
+  fi
+
+}
+
+# Function to print the usage information
+usage() {
+
+  echo -e "
+  Usage: ${BOLD}ssh-list-hosts${NOSTYLE} [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-d${NOSTYLE} | ${BOLD}--debug${NOSTYLE}] [${BOLD}-c${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE} | ${BOLD}--config${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}]
+
+  List current hosts from the ssh config file
+
+  ${DIM}Options:${NOSTYLE}
+    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}  Display this usage help
+    ${BOLD}-d${NOSTYLE}, ${BOLD}--debug${NOSTYLE} Enable debug mode and output more verbosely
+
+    ${BOLD}-c${NOSTYLE}, ${BOLD}--config${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}  Config file to list hosts from     ${CYAN}[DEFAULT]${NOSTYLE}: $config_file
+    ${BOLD}-t${NOSTYLE}, ${BOLD}--test${NOSTYLE}                Whether or not to also test hosts  ${CYAN}[DEFAULT]${NOSTYLE}: false"
+
+}
+
+spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# shellcheck disable=SC2120
+show_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  _SPIN_PID=$!
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+stop_spinner() {
+
+  # TODO: Prevent this extra error line from sometimes showing after the hosts
+  # --> "/Users/USERNAME/.dotfiles/bin/ssh-list-hosts: line 391: kill: (14824) - No such process"
+
+  # Check if the _SPIN_PID process is still running or not
+  if ! kill "$_SPIN_PID" >/dev/null 2>&1; then
+
+    # Unable to kill the process
+    # possiblly due to it not existing
+    IN_DEBUG echo -e "${RED}[ERROR]${NOSTYLE}: There was an error killing the spinner process: $?"
+
+  fi
+
+}
+
+# ---------------------- #
+# -| ARGUMENT PARSING |- #
+# ---------------------- #
+
+# Check if there are any arguments provided
+if [ $# -ne 0 ]; then
+
+  # There are arguments provided
+  # Transform long options to short ones
+  for arg in "$@"; do
+
+    shift
+
+    case "$arg" in
+
+    "--config") set -- "$@" "-c" ;;
+    "--help") set -- "$@" "-h" ;;
+    "--debug") set -- "$@" "-d" ;;
+    "--test") set -- "$@" "-t" ;;
+    *) set -- "$@" "$arg" ;;
+
+    esac
+
+  done
+
+  # Parse short options
+  OPTIND=1
+  while getopts ":c:hdt" opt; do
+
+    case "$opt" in
+    "c") config_file="$OPTARG" ;;
+    "d") _DEBUG="true" ;;
+    "t") host_testing="true" ;;
+    "h")
+      usage
+      exit 0
+      ;;
+    # Unrecognized option
+    \?)
+
+      # Let them know we have an unrecognized option
+      echo -e "${FUNCNAME[0]}: ${RED}$error_unrecgonized_option${NOCOLOR} --> $OPTARG\n"
+
+      # Print the usage information
+      usage
+      exit 1
+      ;;
+    :)
+
+      # Signal that one of the options requires an argument and is missing it
+      echo -e "${RED}[ERROR]:${NOCOLOR} Option -$OPTARG requires a argument/value" >&2
+
+      usage
+
+      exit 1
+      ;;
+    esac
+
+  done
+
+fi
+
+# Remove options from positional parameters
+shift "$((OPTIND - 1))"
+
+# ----------------- #
+# -| MAIN SCRIPT |- #
+# ----------------- #
+
+# Function to print either all the hosts from $config_file
+# or prints each individual one at a time
+# print_hosts() {
+
+#   echo "Printing hosts..."
+
+#   # Only argument
+#   local current_host="$1"
+
+#   # Check if we have host testing enabled or not
+#   if [ "$host_testing" == "true" ]; then
+
+#     # Host testing IS enabled
+#     # Print each host one at a time for testing
+#     echo -ne "$current_host"
+
+#   else
+
+#     echo "Testing enabled"
+
+#     # Host testing IS NOT enabled
+#     column -t "$output_row"
+
+#   fi
+
+# }
+
+# Whether or not we have a newline at the end of $config_file
+# 0 = there IS NO trailing newline
+# 1 = there IS a trailing newline
+has_newline=$(tail -1 "$config_file" | wc -l | awk '{ print $1 }')
+
+# Check if the config file has a trailing newline or not
+if [ "$has_newline" -eq 0 ]; then
+
+  # We do not have a trailing newline at the end of $config_file
+  # Add an extra newline character to the end of the file for readability
+  printf "\n" >>"$config_file"
+
+fi
+
+# Lists the hosts defined in $config_file
+while IFS='' read -r line; do
+
+  # Check if line is the "Host {name}" line
+  if echo "$line" | grep -iqF "host "; then
+
+    # Reset and add Host to temp variable (Name of the host)
+    name=$(echo "$line" | awk '{ print $2 }')
+
+    output_row+="${BOLD}$name${NOSTYLE}"
+
+  # Otherwise, if it's the second line (HostName / IP Address)
+  elif echo "$line" | grep -iqF "hostname "; then
+
+    host=$(echo "$line" | awk '{ print $2 }')
+
+    output_row+="\t${UNDERLINE}$host${NOSTYLE}"
+
+  # Otherwise,  if it's on the third line (User)
+  elif echo "$line" | grep -iqF "user "; then
+
+    user=$(echo "$line" | awk '{ print $2 }')
+
+    output_row+="\t$user"
+
+  # Otherwise, if it's on the fourth line (IdentityFile)
+  elif echo "$line" | grep -iqF "identityfile "; then
+
+    id_file=$(echo "$line" | awk '{ print $2 }')
+
+    output_row+="\t${ORANGE}$id_file${NOSTYLE}"
+
+    # Check if we have host testing enabled or not
+    if [ "$host_testing" == "true" ]; then
+
+      # Host testing IS enabled
+
+      # TODO: Figure out how to test the connection and print in a column format
+
+      echo -ne "$output_row Testing connection... "
+
+      # Start showing the spinner animation
+      show_spinner
+
+      # Test the connection over port 22 with the ID file
+      if timeout $connection_test_timeout bash -c "</dev/tcp/$host/$test_port" >/dev/null 2>&1; then
+
+        # Stop the spinner
+        stop_spinner >/dev/null 2>&1
+
+        # Successfully connected with username and ID file over port 22
+        echo -ne " ${GREEN}[Reachable]${NOSTYLE}\n"
+
+      else
+
+        # Stop the spinner
+        stop_spinner >/dev/null 2>&1
+
+        # Connection test failed
+        echo -ne " ${RED}[Unreachable]${NOSTYLE}\n"
+
+      fi
+
+      # Clear out the $output_row for the text loop iteration
+      output_row=""
+
+    else
+
+      # Testing IS NOT enabled
+      output_row+="\n"
+
+    fi
+
+  fi
+
+done <"$config_file"
+
+if [ "$host_testing" != "true" ]; then
+
+  echo -e "$output_row" | column -s$'\t' -t
+
+fi

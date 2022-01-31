@@ -1,0 +1,7 @@
+include "~/.dotfiles/src/config_files/nano/language_files/*.nanorc"
+
+set linenumbers
+set autoindent
+set breaklonglines
+set tabsize "2"
+set tabstospaces

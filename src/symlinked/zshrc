@@ -1,0 +1,17 @@
+#!/bin/env bash
+
+# shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/aliases
+source "$HOME/.dotfiles/src/config_files/zsh/aliases"
+
+fpath+="$HOME/.dotfiles/src/config_files/zsh/pure"
+
+autoload -U promptinit
+promptinit
+
+# optionally define some options
+# PURE_CMD_MAX_EXEC_TIME=10
+
+# change the path color
+zstyle :prompt:pure:path color white
+
+prompt pure
