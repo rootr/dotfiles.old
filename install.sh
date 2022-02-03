@@ -1,6 +1,6 @@
 #!/bin/bash
 # Installs the required dependencies and symlinks the config files
-# VERSION: 0.1.1
+# VERSION: 0.1.2
 
 # ---------------- #
 # GLOBAL VARIABLES #
@@ -21,12 +21,11 @@ GREEN='\033[0;32m'
 
 # Print usage information for this script
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: usage
 # @ Return: Prints usage message (no return)
 # -------------------------------------------
-# Modified global variables:
-# --> NONE
+# @ Global Variables: NONE
 # -------------------------------------------
 usage() {
 
@@ -42,7 +41,6 @@ usage() {
 }
 
 # A function to generate and animate a spinning loading icon
-# @ Usage: _spinner $framerate $spinner_characters_to_use
 # -----------------------------------------------------------
 # @ Arguments:
 # --> framerate [NUMBER] | Desired framerate     (optional)
@@ -50,9 +48,8 @@ usage() {
 # -----------------------------------------------------------
 # @ Usage: _spinner [$framerate] [$spinner_characters_to_use]
 # @ Return: no return value
-# -----------------------------------------------------------
-# Modified global variables:
-# --> NONE
+# -------------------------------------------
+# @ Global Variables: NONE
 # -----------------------------------------------------------
 _spinner() {
 
@@ -87,13 +84,12 @@ _spinner() {
 }
 
 # Function to show a spinner while something is loading
-# @ Usage: show_spinner
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: show_spinner
 # @ Return: Shows the animated icon until stopped (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $_SPIN_PID - Sets to PID of spinner process
 # -------------------------------------------
 # shellcheck disable=SC2120
@@ -117,16 +113,14 @@ show_spinner() {
 }
 
 # Function to kill the spinner on demand
-# @ Usage: stop_spinner
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: stop_spinner
 # @ Return: Shows the animated icon until stopped (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $_SPIN_PID - Resets back to ""
 # -------------------------------------------
-# @ Usage: stop_spinner
 stop_spinner() {
 
   # Check if the _SPIN_PID process is still running or not
@@ -143,14 +137,12 @@ stop_spinner() {
 }
 
 # A function to ask the user if they want to try again
-# @ Usage: show_spinner
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: _try-again "Question to ask" $function_to_run_again
-# @ Return: 0/1 (success OR failure)
+# @ Return: 0 on success, non-zero on error
 # -------------------------------------------
-# Modified global variables:
-# --> NONE
+# @ Global Variables: NONE
 # -------------------------------------------
 # shellcheck disable=SC2120
 _try-again() {
@@ -236,7 +228,7 @@ verbose_mode="disabled"
 # @ Usage: parse-args "$@"
 # @ Return: Only modifies variables (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $verbose_mode
 # -------------------------------------------
 parse-args() {
@@ -306,9 +298,11 @@ parse-args() {
 
 # Function to print messages if we're in verbose mode
 # -------------------------------------------
-# @ Usage: print-verbose "Message to print"
 # @ Arguments: [STRING] --> Message to print
+# @ Usage: print-verbose "Message to print"
 # @ Return: Prints message (no return)
+# -------------------------------------------
+# @ Global Variables: NONE
 # -------------------------------------------
 print-it() {
 
@@ -329,7 +323,9 @@ print-it() {
 # -------------------------------------------
 # @ Argument: [REQUIRED] Command to test (e.g. curl)
 # @ Usage: is-installed cmd
-# @ Return: 0/1 (success / failure)
+# @ Return: 0 on success, non-zero on error
+# -------------------------------------------
+# @ Global Variables: NONE
 # -------------------------------------------
 is-installed() {
 
@@ -362,8 +358,11 @@ is-installed() {
 
 # Function to check which OS we're running on
 # -------------------------------------------
+# @ Argument: NONE
 # @ Usage: os_name=$(get-os-name)
 # @ Return: Prints results
+# -------------------------------------------
+# @ Global Variables: NONE
 # -------------------------------------------
 get-os-name() {
 
@@ -412,7 +411,7 @@ get-os-name() {
 # @ Usage: check-deps "os_name"
 # @ Return: 0 or 1 (success / failure)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $pkgs_to_install
 # -------------------------------------------
 # shellcheck disable=SC2120
