@@ -11,7 +11,10 @@ promptinit
 # optionally define some options
 # PURE_CMD_MAX_EXEC_TIME=10
 
+# Define the character for the prompt symbol
+PURE_PROMPT_SYMBOL=">"
+
 # change the path color
-zstyle :prompt:pure:path color white
+zstyle :prompt:pure:pink:path color white
 
 prompt pure
