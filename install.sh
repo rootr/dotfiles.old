@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 # Installs the required dependencies and symlinks the config files
 # VERSION: 0.1.1
 
@@ -146,14 +146,14 @@ stop_spinner() {
 # @ Usage: show_spinner
 # -------------------------------------------
 # @ Arguments: None
-# @ Usage: _try-again "Question to ask" $function_to_run_again
+# @ Usage: try_again "Question to ask" $function_to_run_again
 # @ Return: 0/1 (success OR failure)
 # -------------------------------------------
 # Modified global variables:
 # --> NONE
 # -------------------------------------------
 # shellcheck disable=SC2120
-_try-again() {
+try_again() {
 
   # Whether or not to try again
   # Default: y / yes
@@ -233,13 +233,13 @@ verbose_mode="disabled"
 # Parse the command line arguments for this script
 # -------------------------------------------
 # @ Arguments: Must pass script arguments "$@"
-# @ Usage: parse-args "$@"
+# @ Usage: parse_args "$@"
 # @ Return: Only modifies variables (no return)
 # -------------------------------------------
 # Modified global variables:
 # --> $verbose_mode
 # -------------------------------------------
-parse-args() {
+parse_args() {
 
   # Check if there are any arguments provided
   if [ "$#" -ne 0 ]; then
@@ -310,7 +310,7 @@ parse-args() {
 # @ Arguments: [STRING] --> Message to print
 # @ Return: Prints message (no return)
 # -------------------------------------------
-print-it() {
+print_it() {
 
   # Message to print
   local msg="$1"
@@ -328,10 +328,10 @@ print-it() {
 # Function to check if the a specified bin is installed
 # -------------------------------------------
 # @ Argument: [REQUIRED] Command to test (e.g. curl)
-# @ Usage: is-installed cmd
+# @ Usage: is_installed cmd
 # @ Return: 0/1 (success / failure)
 # -------------------------------------------
-is-installed() {
+is_installed() {
 
   if [ "$#" -eq 0 ]; then
 
@@ -341,20 +341,20 @@ is-installed() {
 
   fi
 
-  print-it "Checking for presence of '$1' command... "
+  print_it "Checking for presence of '$1' command... "
 
   # Allow time to read the message
   sleep 0.5
 
   if ! command -v "$1" > /dev/null; then
 
-    print-it "\033[0;31m[ERROR]\033[0m: '$1' command not found\n"
+    print_it "\033[0;31m[ERROR]\033[0m: '$1' command not found\n"
 
     return 1
 
   fi
 
-  print-it "\033[0;32m[DONE]\033[0m: '$1' command installed\n"
+  print_it "\033[0;32m[DONE]\033[0m: '$1' command installed\n"
 
   return 0
 
@@ -365,7 +365,7 @@ is-installed() {
 # @ Usage: os_name=$(get-os-name)
 # @ Return: Prints results
 # -------------------------------------------
-get-os-name() {
+get_os_name() {
 
   # Get the type of kernel we're on (Linux / macOS)
   # Also convert it to lowercase
@@ -409,14 +409,14 @@ get-os-name() {
 # Check which dependencies need to be installed for all machines
 # -------------------------------------------
 # @ Argument: {STRING} --> OS to check depedencies for (e.g. macos, arch, kali, ubuntu, etc.)
-# @ Usage: check-deps "os_name"
+# @ Usage: check_deps "os_name"
 # @ Return: 0 or 1 (success / failure)
 # -------------------------------------------
 # Modified global variables:
 # --> $pkgs_to_install
 # -------------------------------------------
 # shellcheck disable=SC2120
-check-deps() {
+check_deps() {
 
   # Which OS to check dependencies for
   # @default: pkgs that are required on ALL systems
@@ -459,7 +459,7 @@ check-deps() {
     # Check if the command is valid in this system
     # If the command is not valid, add it to the list of 
     # dependencies to install later
-    is-installed "$dep" || pkgs_to_install+=("$dep")
+    is_installed "$dep" || pkgs_to_install+=("$dep")
 
   done
 
@@ -472,11 +472,11 @@ check-deps() {
 # -| ARGUMENT PARSING |- #
 # ---------------------- #
 # Parse the script arguments (if any)
-parse-args "$@"
+# parse_args "$@"
 
 # Get the name of the OS we're running on currently
 # Possible values: macos, arch, ubuntu, kali or unknown
-os_name=$(get-os_name)
+# os_name=$(get-os_name)
 
 # ------------------ #
 # CHECK DEPENDENCIES #
@@ -503,16 +503,46 @@ os_name=$(get-os_name)
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
+# Change to the home directory
+cd ~/ || exit 1
+
 # Sym link files in /src/symlinked to ~
+ln -sf ~/.dotfiles/src/symlinked/zshrc ./.zshrc
+ln -sf ~/.dotfiles/src/symlinked/nanorc ./.nanorc
 
 # ------------------- #
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
-# Change shell to zsh
-# NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
+echo -ne "Ensuring zsh is installed... "
+
+sleep 0.5
+
+# Check to be sure that zsh is already installed
+if ! is_installed zsh >/dev/null 2>&1; then
+
+  # zsh is not installed
+  echo >&2 -ne "\033[0;31mzsh not currently installed\033[0m\n"
+  exit 1
+
+fi
+
+echo -ne "\033[0;32m[DONE]\033[0m\n"
+
+echo -ne "Checking if zsh is set as the shell... "
+
+sleep 0.5
+
+# Check if zsh is the shell already or not
+if [ "$(echo $SHELL)" == "/usr/bin/zsh" ] || [ "$(echo $SHELL)" == "/bin/zsh" ]; then
+
+  # zsh is installed already
+  echo -ne "\033[0;32m[DONE]\033[0m\n"
+
+fi
 
 # Change source to ~/.zshrc
+source ~/.zshrc
 
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #
