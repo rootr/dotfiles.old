@@ -13,3 +13,29 @@ cd() {
   # TODO: Add check to see if exa is installed or not
 
 } # End - cd replacement function
+
+wait_ssh() {
+
+  # Host to wait for and then connect to
+  local host='jamf-pro-latest.support.jamf.net'
+
+  # Keep track of whether the loop was cancelled or succeeded
+  local ping_cancelled=false
+
+  # Ping until cancelled or succeeded
+  # Then background the process
+  until ping -c1 -w1 "$host" >/dev/null 2>&1; do :; done &
+
+  # Add a trap to trap the process
+  trap "kill $!; $ping_cancelled=true" SIGINT
+
+  # Wait for the loop to exit
+  wait $!
+
+  # Remove the trap as we're done using it
+  trap - SIGINT
+
+  # Let the user know we're done
+  echo "Done pinging, cancelled=$ping_cancelled"
+
+}
