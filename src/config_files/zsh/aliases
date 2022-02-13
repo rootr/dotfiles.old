@@ -15,7 +15,7 @@ source "$HOME/.dotfiles/src/config_files/zsh/functions"
 # -------------------- #
 
 # Run exa command if it's installed, otherwise fallback to ls -la command
-alias ll='command -v exa && exa -lha || ls -la --color=always'
+alias ll='command -v exa >/dev/null 2>&1 && exa -lha || ls -la --color=always'
 
 alias c='clear'
 alias cll='c;ll'

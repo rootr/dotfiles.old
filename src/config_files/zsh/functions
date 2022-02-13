@@ -10,7 +10,7 @@ cd() {
   builtin cd "$@" || return
 
   # Check if we've got exa installed or not
-  if command -v exa; then
+  if command -v exa >/dev/null 2>&1; then
 
     exa -lha
 
