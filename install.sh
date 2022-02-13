@@ -499,6 +499,33 @@ check_deps() {
 
 # --> If it is empty, skip and proceed to next step
 
+# ------------------- #
+# RENAME DOTFILES DIR #
+# ------------------- #
+
+# Check if the dotfiles dir is renamed or not
+if [ ! -d "$HOME/.dotfiles" ]; then
+
+	# The dir is currently not named '.dotfiles'
+	echo -n "Renaming dotfiles directory... "
+
+	# Attempt to rename the dotfiles directory to '.dotfiles'
+	if ! mv "$HOME/dotfiles" "$HOME/.dotfiles"; then
+
+		# There was an issue renaming the directory
+		echo -ne "\033[0;31m[ERROR]\033[0m: There was an error renaming the dotfiles directory [$?]\n"
+		exit $?
+	
+	else
+
+		# The rename was successful
+		echo -ne "\033[0;32m[DONE]\033[0m: Successfully renamed dotfiles\n"
+	
+	fi
+
+fi
+
+
 # -------------------- #
 # SYMLINK CONFIG FILES #
 # -------------------- #
@@ -527,19 +554,19 @@ if ! is_installed zsh >/dev/null 2>&1; then
 
 fi
 
-echo -ne "\033[0;32m[DONE]\033[0m\n"
+echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 
-echo -ne "Checking if zsh is set as the shell... "
+#echo -ne "Checking if zsh is set as the shell... "
 
-sleep 0.5
+#sleep 0.5
 
 # Check if zsh is the shell already or not
-if [ "$(echo $SHELL)" == "/usr/bin/zsh" ] || [ "$(echo $SHELL)" == "/bin/zsh" ]; then
+#if [[ "$(echo $SHELL)" != *"zsh"* ]]; then
 
-  # zsh is installed already
-  echo -ne "\033[0;32m[DONE]\033[0m\n"
+  # zsh IS NOT set for the shell yet
+#  echo -ne "\033[0;31m[DONE]\033[0m: The current shell is not using zsh\n"
 
-fi
+#fi
 
 # Change source to ~/.zshrc
 source ~/.zshrc

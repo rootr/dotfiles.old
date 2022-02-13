@@ -39,3 +39,19 @@ alias getpip='curl -ks https://ipinfo.io/ip'
 alias grep='grep --color=always'
 
 alias path='echo -e ${PATH//:/\\n}'
+
+# ------------------ #
+# ADDITIONAL ALIASES #
+# ------------------ #
+
+# Apply updated .Xresources configurations
+alias uxr='xrdb -merge -I$HOME ~/.Xresources'
+
+# Run the connectToWpa.sh script in ~/scripts/
+alias cwpa='sudo /home/rootr/scripts/connectToWpa.sh'
+
+# Alias to disable the touchpad point from randomly clicking and selecting
+alias disable_touchpad='xinput disable "NTRG0001:01 1B96:1B05"'
+
+# List only the Devices and their disks
+alias disks='sudo fdisk -l | grep Device -A3'

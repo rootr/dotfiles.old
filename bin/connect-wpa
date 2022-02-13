@@ -1,0 +1,605 @@
+#!/bin/bash
+# ==================================================================== #
+# Connect to WPA Wi-Fi with wpa_supplicant
+# -------------------------------------------------------------------- #
+# Connects the machine to WPA-protected Wi-Fi using wpa_supplicant
+# and wpa_passphrase.
+# ==================================================================== #
+#
+# Copyright 2022 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:     
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+########################################################################
+
+# ---------------- #
+# GLOBAL VARIABLES #
+# ---------------- #
+
+# Text style variables
+# Can be used with echo -e or printf
+NOSTYLE='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+BOLD='\033[1m'
+DIM='\033[2m'
+ITALIC='\033[3m'
+UNDERLINE='\033[4m'
+
+# Process ID of the spinner when it's running
+# (the little loading spinner icon that's animated)
+_SPIN_PID=""
+
+# Name of the script file itself
+_SCRIPT_NAME=$(basename "$0")
+
+# ---------------- #
+# GLOBAL FUNCTIONS #
+# ---------------- #
+
+# A function to generate and animate a spinning loading icon
+# -----------------------------------------------------------
+# @ Arguments:
+# --> framerate [NUMBER] | Desired framerate     (optional)
+# --> spinner   [STRING] | Characters to animate (optional)
+# -----------------------------------------------------------
+# @ Usage: _spinner [$framerate] [$spinner_characters_to_use]
+# @ Return: no return value
+# -------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# -------------------------------------------
+# @ Arguments: NONE
+# @ Usage: show_spinner
+# @ Return: Shows the animated icon until stopped (no return)
+# -------------------------------------------
+# @ Global Variables:
+# --> $_SPIN_PID - Sets to PID of spinner process
+# -------------------------------------------
+# shellcheck disable=SC2120
+show_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  _spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  _SPIN_PID=$!
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+# -------------------------------------------
+# @ Arguments: NONE
+# @ Usage: stop_spinner
+# @ Return: Shows the animated icon until stopped (no return)
+# -------------------------------------------
+# @ Global Variables:
+# --> $_SPIN_PID - Resets back to ""
+# -------------------------------------------
+stop_spinner() {
+
+  # Check if the _SPIN_PID process is still running or not
+  if ps -p "$_SPIN_PID" >/dev/null; then
+
+    # Kill the spinner PID
+    kill $_SPIN_PID
+
+    # Clear the $_SPIN_PID value
+    _SPIN_PID=""
+
+  fi
+
+}
+
+# ---------- #
+# PARAMETERS #
+# ---------- #
+
+# wpa_supplicant config file path to use
+wpaConfigFile="/etc/wpa_supplicant/wpa-GryffinDorks.conf"
+
+# Default network device to use
+defaultInterface=""
+
+# Default SSID to use
+defaultAccessPoint="GryffinDorks"
+
+# Which interface to use to connect to wifi
+interfaceToUse="$defaultInterface"
+
+# Name of access point / router to connect to
+accessPointToUse="$defaultAccessPoint"
+
+# Max number of times to test the internet connection (with 1 second delay between tests)
+internetTestMax=3
+
+# Count of the number of times we've tested the internet connection
+internetTestCount=0
+
+# --------- #
+# FUNCTIONS #
+# --------- #
+
+# Print usage information for this script
+# -------------------------------------------
+# @ Arguments: NONE
+# @ Usage: usage
+# @ Return: Prints usage message (no return)
+# -------------------------------------------
+# @ Global Variables: NONE
+# -------------------------------------------
+usage() {
+
+  echo -e "
+  Usage: ${BOLD}$_SCRIPT_NAME${NOSTYLE} [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-i${NOSTYLE} | ${BOLD}--interface${NOSTYLE}] [${BOLD}-a${NOSTYLE} | ${BOLD}--ssid${NOSTYLE}]
+
+  Script to connect to a wpa-protected Wi-Fi network and run DHCP
+
+  ${DIM}Options:${NOSTYLE}
+    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}              Display this usage help
+
+    ${BOLD}-i${NOSTYLE}, ${BOLD}--interface${NOSTYLE} ${ITALIC}<INTERFACE_NAME>${NOSTYLE}  Wireless interface to use      ${CYAN}[DEFAULT]${NOSTYLE}: $defaultInterface
+    ${BOLD}-c${NOSTYLE}, ${BOLD}--config${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}          Path to wpa config file to use ${CYAN}[DEFAULT]${NOSTYLE}: $wpaConfigFile"
+
+}
+
+# Prompt the user for input
+# -----------------------------------------------------------
+# @ Arguments: 
+# --> QuestionToAsk [STRING] | Question text to ask
+# --> DefaultAnswer [STRING] | Default answer to the question
+# -----------------------------------------------------------
+# @ Usage: promptUser "Question to ask user?" "$defaultAnswer"
+# @ Return: NONE --> prints results
+# -----------------------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+promptUser() {
+
+  # $1 = "Text to prompt user with"
+  # $2 = "default option"
+
+  # Prompt the user with the question
+  read -rp "$1" response
+
+  # Check if the response is blank
+  if [ -z "$response" ]; then
+
+    # User opted for the default
+    echo "$2"
+
+  fi
+
+  # Otherwise, print what the user entered
+  echo "$response"
+
+  return 0
+
+}
+
+# Get all available wi-fi interfaces with `ip link`
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: getInterface
+# @ Return: 0 on success, non-zero on failure
+# -----------------------------------------------------------
+# @ Global Variables:
+# --> $defaultInterface   SET default interface
+# --> $interfaceToUse     SET the interface to use
+# -----------------------------------------------------------
+getInterface() {
+
+  echo -n "Checking for available wireless interfaces... "
+
+  # Get all available interfaces
+  # and filter to only wireless interfaces (beginning with 'w')
+  # e.g: wlp1s0: <BROADCAST,MULTICAST> mtu 1500 qdisk noop state DOWN mode DEFAULT group default qlen 1000
+  local wirelessInterfaces_all=""
+  wirelessInterfaces_all=$(ip link | grep -E '^[[:digit:]]:' | awk '{ $1=""; print $0 }' | sed 's/^ //g' | grep -iE '^w[^:]+' --color=never)
+
+  # Contains the specific name of the interface (once selected)
+  local interfaceName=""
+
+  # Check if there is only a single available wi-fi interface or multiple
+  if [ "$(wc -l <<<"$wirelessInterfaces_all")" -eq 1 ]; then
+
+    # Extract just the interface name (without the trailing ':')
+    interfaceName=$(awk '{ print $1 }' <<<"$wirelessInterfaces_all" | sed 's/:$//g')
+
+    echo -ne "${GREEN}[DONE]${NOSTYLE}: ${ORANGE}Only one (1) wireless interface found${NOSTYLE}, using '$interfaceName'\n"
+
+    # Only a single interface is available for Wi-Fi
+    # Set the '$defaultInterface' to the only available
+    defaultInterface="$interfaceName"
+
+    # Set it to use this interface going forward
+    interfaceToUse="$interfaceName"
+
+    # Return success
+    return 0
+
+  # Otherwise, if there is more than one (1) available wireless interface
+  else
+
+    echo -ne "${GREEN}[DONE]${NOSTYLE}\n\n"
+    echo -ne "${UNDERLINE}Listing All Available Wireless Interfaces${NOSTYLE}\n\n"
+    echo -ne "${GREEN}-----------------------${NOSTYLE}\n"
+
+    # List all the available wireless interfaces
+    # and color the output so the interface names are highlighted
+    echo "$wirelessInterfaces_all" | grep -iE '^w[^:]+' --color=always
+
+    echo -ne "${GREEN}-----------------------${NOSTYLE}\n"
+
+    # Check if '$defaultInterface' is set or not
+    if [ -z "$defaultInterface" ]; then
+
+      # '$defaultInterface' IS NOT SET yet
+      # Set the '$defaultInterface' to the first available interface
+      defaultInterface=$(head -1 <<<"$wirelessInterfaces_all" | grep -iEo '^[^:]+')
+
+    fi
+
+    # Prompt user for which interface to use
+    interfaceToUse=$(promptUser "Which interface to use [$defaultInterface]? " "$defaultInterface")
+
+    # Return success
+    return 0
+
+  fi
+
+  # Otherwise, return failure
+  return 1
+
+}
+
+# Parse the command line arguments for this script
+# -------------------------------------------
+# @ Arguments: Must pass script arguments "$@"
+# @ Usage: parse-args "$@"
+# @ Return: 0 on success, non-zero on failure
+# -------------------------------------------
+# @ Global Variables:
+# --> $verbose_mode
+# -------------------------------------------
+parse-args() {
+
+  # Check if there are any arguments provided
+  if [ "$#" -ne 0 ]; then
+
+    # There are arguments provided
+    # Transform long options to short ones
+    for arg in "$@"; do
+
+      shift
+
+      case "$arg" in
+      "--help") set -- "$@" "-h" ;;
+      "--interface") set -- "$@" "-i" ;;
+      "--config") set -- "$@" "-c" ;;
+      *) set -- "$@" "$arg" ;;
+
+      esac
+
+    done
+
+    # Parse short options
+    while getopts ":hi:c:" options; do
+
+      # Check the different flags
+      case $options in
+      # Dispaly the usage information
+      "h")
+        usage
+        exit 0
+        ;;
+      "i") interfaceToUse="$OPTARG" ;;
+      "c") wpaConfigFile="$OPTARG" ;;
+      # Unrecognized option
+      \?)
+
+        # Let them know we have an unrecognized option
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}unrecognized option${NOSTYLE} --> $OPTARG"
+
+        # Print the usage information
+        usage
+
+        # Exit with an error
+        return 1
+        ;;
+      :)
+
+        # Signal that one of the options requires an argument and is missing it
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}[ERROR]:${NOSTYLE} Option -$OPTARG requires an argument"
+
+        # Print the usage information
+        usage
+
+        # Exit with an error
+        return 1
+        ;;
+      esac
+
+    done
+
+  fi # End - Argument parsing conditional
+
+  # Remove the processed arguments
+  shift $((OPTIND - 1))
+
+}
+
+# Checks the config file for wpa_supplicant created with wpa_passphrase
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: checkWpaConfig
+# @ Return: 0 on success, non-zero for failure
+# -----------------------------------------------------------
+# @ Global Variables: 
+# --> $wpaConfigFile
+# --> $accessPointToUse
+# -----------------------------------------------------------
+checkWpaConfig() {
+
+  echo -n "Checking wpa_supplicant config file... "
+
+  # Ensure the '$wpaConfigFile' is defined
+  if [ -n "$wpaConfigFile" ]; then
+
+    echo -ne "${GREEN}[IS SET]${NOSTYLE} "
+
+    # '$wpaConfigFile' is defined, check if it's a valid file
+    if [ -f "$wpaConfigFile" ] && grep 'ssid=' <"$wpaConfigFile" >/dev/null && grep 'psk=' <"$wpaConfigFile" >/dev/null; then
+
+      # '$wpaConfigFile' is a valid wpa_supplicant config file
+      # Extract the SSID from the wpa config file
+
+      accessPointToUse=$(awk -F'"' '{ print $2 }' <"$wpaConfigFile" | tr -d '\n')
+
+      echo -ne "${GREEN}[DONE]${NOSTYLE}\n"
+
+      return 0
+
+    else
+
+      # '$wpaConfigFile' is not a valid wpa_supplicant config file
+      echo -ne "${RED}[ERROR]${NOSTYLE}: The wpa config file is not valid, evaluating '$wpaConfigFile'\n"
+      return 1
+
+    fi
+
+  fi
+
+}
+
+# Attempts to bring the '$interfaceToUse' interface up with
+# ip link set "$interfaceToUse" up
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: bringInterfaceUp
+# @ Return: 0 on success, non-zero on failure
+# -----------------------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+bringInterfaceUp() {
+
+  echo -n "Attempting to bring the '$interfaceToUse' interface up... '"
+
+  if ! ip link set "$interfaceToUse" up >/dev/null 2>&1; then
+
+    # There was an error bringing the specified interface up
+    echo -ne "${RED}[ERROR]${NOSTYLE}: There was an error bringing the '$interfaceToUse' interface up\n"
+    return 1
+
+  fi
+
+  echo -ne "${GREEN}[DONE]${NOSTYLE}\n"
+  
+  # Return success
+  return 0
+
+}
+
+startDHCPService() {
+
+  echo -n "Starting DHCP service... "
+
+  if ! dhcpcd >/dev/null 2>&1; then
+
+    # There was an error startint DHCP
+    echo -ne "${RED}[ERROR]${NOSTYLE}: There was an error starting DHCP service\n"
+    return 1
+
+  fi
+
+  echo -ne "${GREEN}[DONE]${NOSTYLE}\n"
+
+  # Return success
+  return 0
+
+}
+
+connectToNetwork() {
+
+  echo -n "Attempting to connect to the '$accessPointToUse' network... "
+
+  if ! wpa_supplicant -i "$interfaceToUse" -c "$wpaConfigFile" -B >/dev/null 2>&1; then
+
+    # There was an issue connecting to the network
+    echo -ne "${RED}[ERROR]${NOSTYLE}: There was an error connecting to the '$accessPointToUse' access point\n"
+    return 1
+
+  fi
+
+  echo -ne "${GREEN}[DONE]${NOSTYLE}\n"
+
+  # Return success
+  return 0
+
+}
+
+testInternet() {
+
+  # Increment the internet test count index by one (1)
+  internetTestCount=$(( internetTestCount + 1 ))
+
+  # Check if we're on the first attempt
+  if (( internetTestCount <= internetTestMax && internetTestCount > 1 )); then
+
+    # We ARE NOT on our first attempt
+    echo -n "|--> Trying test again [$internetTestCount]... "
+
+  else
+
+    # We are on our first test attempt
+    echo -n "Testing internet connection... "
+
+  fi
+
+  # Test if we can successfully connect to the internet
+  if ncat -vz google.com 443 >/dev/null 2>&1; then
+
+    echo -ne "${GREEN}[PASSED]${NOSTYLE}\n"
+
+    # Internet test successfully PASSED
+    return 0
+  
+  fi
+
+  # Otherwise, we ARE NOT connected to the internet
+  echo -ne "${RED}[FAILED]${NOSTYLE}\n"
+
+  # Check if we've hit the '$internetTestMax' number
+  if [ "$internetTestCount" -ge "$internetTestMax" ]; then
+
+    # We've reached the maximum test re-tries
+    echo -ne "${RED}[ERROR]${NOSTYLE}: Something went wrong and the internet connection test failed\n"
+    return 1
+
+  else
+
+    # We are not on the last test attempt,
+    # re-run the test with a 1 second delay
+    sleep 1
+    testInternet
+
+  fi
+
+}
+
+# ----------------- #
+# MAIN SCRIPT LOGIC #
+# ----------------- #
+
+# Check that we're running this script as root
+# and exit if not running as root
+if [ "$EUID" -ne 0 ]; then
+
+  echo -e "${RED}Please run as root${NOSTYLE}"
+  exit 1
+
+fi
+
+# Parse arguments for the script
+# or exit on error
+parse-args "$@" || exit $?
+
+# Select interface to use
+# or exit on error
+getInterface || exit $?
+
+# Check wpa_supplicant config file to use
+# or exit on error
+checkWpaConfig || exit $?
+
+# Bring the selected interface up
+# or exit on error
+bringInterfaceUp || exit $?
+
+# Connect to access point with wpa_supplicant (Run in background with '-B')
+# or exit on error
+connectToNetwork || exit $?
+
+# Wait a bit before attempting to start DHCP
+sleep 2
+
+# Run DHCP in the background
+# or exit on error
+startDHCPService || exit $?
+
+# Wait 2 seconds and then test the internet connection
+# --> Maybe run a loop that checks the internet every 2 seconds until connected (max 3 attempts)
+sleep 2
+
+testInternet || exit $?
+
+# Exit script gracefully
+
+echo -ne "\n---------------------------\n"
+echo -ne "${GREEN}Successfully connected to the internet${NOSTYLE}\n"
+echo -ne "---------------------------\n\n"
+
+# Exit the script with success
+exit 0
