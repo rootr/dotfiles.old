@@ -1,7 +1,35 @@
-#!/bin/env bash
+#!/bin/bash
 # Installs the required dependencies and symlinks the config files
-# VERSION: 0.1.1
+# VERSION: 0.1.2
+# ---------------------------------------------------------------------------------------- #
+# Usage: 0]} [-h | --help] [-d | --debug] [-f <FILE_PATH> | --file <FILE_PATH>]
+# 
+#   Parse through Jamf log file
+# 
+#   Options:
+#     -h, --help              Display this usage help
+# 
+#     -f, --file <FILE_PATH>  Config file to list hosts from     [DEFAULT]: '$log_path"
+# ---------------------------------------------------------------------------------------- #
+# Copyright 2022 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions: The
+# above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
 # ---------------- #
 # GLOBAL VARIABLES #
 # ---------------- #
@@ -21,12 +49,11 @@ GREEN='\033[0;32m'
 
 # Print usage information for this script
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: usage
 # @ Return: Prints usage message (no return)
 # -------------------------------------------
-# Modified global variables:
-# --> NONE
+# @ Global Variables: NONE
 # -------------------------------------------
 usage() {
 
@@ -42,7 +69,6 @@ usage() {
 }
 
 # A function to generate and animate a spinning loading icon
-# @ Usage: _spinner $framerate $spinner_characters_to_use
 # -----------------------------------------------------------
 # @ Arguments:
 # --> framerate [NUMBER] | Desired framerate     (optional)
@@ -50,9 +76,8 @@ usage() {
 # -----------------------------------------------------------
 # @ Usage: _spinner [$framerate] [$spinner_characters_to_use]
 # @ Return: no return value
-# -----------------------------------------------------------
-# Modified global variables:
-# --> NONE
+# -------------------------------------------
+# @ Global Variables: NONE
 # -----------------------------------------------------------
 _spinner() {
 
@@ -87,13 +112,12 @@ _spinner() {
 }
 
 # Function to show a spinner while something is loading
-# @ Usage: show_spinner
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: show_spinner
 # @ Return: Shows the animated icon until stopped (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $_SPIN_PID - Sets to PID of spinner process
 # -------------------------------------------
 # shellcheck disable=SC2120
@@ -117,16 +141,14 @@ show_spinner() {
 }
 
 # Function to kill the spinner on demand
-# @ Usage: stop_spinner
 # -------------------------------------------
-# @ Arguments: None
+# @ Arguments: NONE
 # @ Usage: stop_spinner
 # @ Return: Shows the animated icon until stopped (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $_SPIN_PID - Resets back to ""
 # -------------------------------------------
-# @ Usage: stop_spinner
 stop_spinner() {
 
   # Check if the _SPIN_PID process is still running or not
@@ -143,17 +165,15 @@ stop_spinner() {
 }
 
 # A function to ask the user if they want to try again
-# @ Usage: show_spinner
 # -------------------------------------------
-# @ Arguments: None
-# @ Usage: try_again "Question to ask" $function_to_run_again
-# @ Return: 0/1 (success OR failure)
+# @ Arguments: NONE
+# @ Usage: _try-again "Question to ask" $function_to_run_again
+# @ Return: 0 on success, non-zero on error
 # -------------------------------------------
-# Modified global variables:
-# --> NONE
+# @ Global Variables: NONE
 # -------------------------------------------
 # shellcheck disable=SC2120
-try_again() {
+_try-again() {
 
   # Whether or not to try again
   # Default: y / yes
@@ -233,13 +253,13 @@ verbose_mode="disabled"
 # Parse the command line arguments for this script
 # -------------------------------------------
 # @ Arguments: Must pass script arguments "$@"
-# @ Usage: parse_args "$@"
+# @ Usage: parse-args "$@"
 # @ Return: Only modifies variables (no return)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $verbose_mode
 # -------------------------------------------
-parse_args() {
+parse-args() {
 
   # Check if there are any arguments provided
   if [ "$#" -ne 0 ]; then
@@ -306,11 +326,13 @@ parse_args() {
 
 # Function to print messages if we're in verbose mode
 # -------------------------------------------
-# @ Usage: print-verbose "Message to print"
 # @ Arguments: [STRING] --> Message to print
+# @ Usage: print-verbose "Message to print"
 # @ Return: Prints message (no return)
 # -------------------------------------------
-print_it() {
+# @ Global Variables: NONE
+# -------------------------------------------
+print-it() {
 
   # Message to print
   local msg="$1"
@@ -328,10 +350,12 @@ print_it() {
 # Function to check if the a specified bin is installed
 # -------------------------------------------
 # @ Argument: [REQUIRED] Command to test (e.g. curl)
-# @ Usage: is_installed cmd
-# @ Return: 0/1 (success / failure)
+# @ Usage: is-installed cmd
+# @ Return: 0 on success, non-zero on error
 # -------------------------------------------
-is_installed() {
+# @ Global Variables: NONE
+# -------------------------------------------
+is-installed() {
 
   if [ "$#" -eq 0 ]; then
 
@@ -341,20 +365,20 @@ is_installed() {
 
   fi
 
-  print_it "Checking for presence of '$1' command... "
+  print-it "Checking for presence of '$1' command... "
 
   # Allow time to read the message
   sleep 0.5
 
   if ! command -v "$1" > /dev/null; then
 
-    print_it "\033[0;31m[ERROR]\033[0m: '$1' command not found\n"
+    print-it "\033[0;31m[ERROR]\033[0m: '$1' command not found\n"
 
     return 1
 
   fi
 
-  print_it "\033[0;32m[DONE]\033[0m: '$1' command installed\n"
+  print-it "\033[0;32m[DONE]\033[0m: '$1' command installed\n"
 
   return 0
 
@@ -362,10 +386,13 @@ is_installed() {
 
 # Function to check which OS we're running on
 # -------------------------------------------
+# @ Argument: NONE
 # @ Usage: os_name=$(get-os-name)
 # @ Return: Prints results
 # -------------------------------------------
-get_os_name() {
+# @ Global Variables: NONE
+# -------------------------------------------
+get-os-name() {
 
   # Get the type of kernel we're on (Linux / macOS)
   # Also convert it to lowercase
@@ -409,14 +436,14 @@ get_os_name() {
 # Check which dependencies need to be installed for all machines
 # -------------------------------------------
 # @ Argument: {STRING} --> OS to check depedencies for (e.g. macos, arch, kali, ubuntu, etc.)
-# @ Usage: check_deps "os_name"
+# @ Usage: check-deps "os_name"
 # @ Return: 0 or 1 (success / failure)
 # -------------------------------------------
-# Modified global variables:
+# @ Global Variables:
 # --> $pkgs_to_install
 # -------------------------------------------
 # shellcheck disable=SC2120
-check_deps() {
+check-deps() {
 
   # Which OS to check dependencies for
   # @default: pkgs that are required on ALL systems
@@ -459,7 +486,7 @@ check_deps() {
     # Check if the command is valid in this system
     # If the command is not valid, add it to the list of 
     # dependencies to install later
-    is_installed "$dep" || pkgs_to_install+=("$dep")
+    is-installed "$dep" || pkgs_to_install+=("$dep")
 
   done
 
@@ -472,11 +499,11 @@ check_deps() {
 # -| ARGUMENT PARSING |- #
 # ---------------------- #
 # Parse the script arguments (if any)
-# parse_args "$@"
+parse-args "$@"
 
 # Get the name of the OS we're running on currently
 # Possible values: macos, arch, ubuntu, kali or unknown
-# os_name=$(get-os_name)
+os_name=$(get-os_name)
 
 # ------------------ #
 # CHECK DEPENDENCIES #
@@ -530,17 +557,13 @@ fi
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
-# Change to the home directory
-cd ~/ || exit 1
-
 # Sym link files in /src/symlinked to ~
-ln -sf ~/.dotfiles/src/symlinked/zshrc ./.zshrc
-ln -sf ~/.dotfiles/src/symlinked/nanorc ./.nanorc
 
 # ------------------- #
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
+<<<<<<< HEAD
 echo -ne "Ensuring zsh is installed... "
 
 sleep 0.5
@@ -567,9 +590,12 @@ echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 #  echo -ne "\033[0;31m[DONE]\033[0m: The current shell is not using zsh\n"
 
 #fi
+=======
+# Change shell to zsh
+# NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
+>>>>>>> fb039a9a0c611ff96311ac4fe8d23e37d829ad09
 
 # Change source to ~/.zshrc
-source ~/.zshrc
 
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #

@@ -1,0 +1,366 @@
+#!/bin/bash
+# -------------- #
+# -| JAMF-LOG |- #
+# -------------- #
+# A script to make parsing Jamf log files easier
+# ---------------------------------------------------------------------------------------- #
+# Usage: jamf-log [-h | --help] [-d | --debug] [-f <FILE_PATH> | --file <FILE_PATH>]
+# 
+#   Parse through Jamf log file
+# 
+#   Options:
+#     -h, --help              Display this usage help
+# 
+#     -f, --file <FILE_PATH>  Config file to list hosts from     [DEFAULT]: '$log_path"
+# ---------------------------------------------------------------------------------------- #
+# Copyright 2022 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions: The
+# above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
+
+# ---------------- #
+# GLOBAL VARIABLES #
+# ---------------- #
+
+# PID of the show_spinner function
+# Used to stop/kill the spinner when the test is complete
+_SPIN_PID=""
+
+# Path to the log file
+log_path="./JAMFSoftwareServer.log"
+
+# --------------- #
+# COLOR VARIABLES #
+# --------------- #
+
+NOSTYLE='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+
+BOLD='\033[1m'
+DIM='\033[2m'
+ITALIC='\033[3m'
+
+# Whether or not to color code the log entries
+# Color coding is based on error/warn/info/debug
+color_code="enabled"
+
+# ---------------- #
+# GLOBAL FUNCTIONS #
+# ---------------- #
+
+# Function to print the usage information
+usage() {
+
+  echo -e "
+  Usage: ${BOLD}${FUNCNAME[0]}${NOSTYLE} [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-d${NOSTYLE} | ${BOLD}--debug${NOSTYLE}] [${BOLD}-f${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE} | ${BOLD}--file${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}]
+
+  Parse through Jamf log file
+
+  ${DIM}Options:${NOSTYLE}
+    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}              Display this usage help
+    ${BOLD}-c${NOSTYLE}, ${BOLD}--color${NOSTYLE}             Color code the log entries based on their type        ${CYAN}[DEFAULT]${NOSTYLE}: '$color_code
+
+    ${BOLD}-f${NOSTYLE}, ${BOLD}--file${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}  Config file to list hosts from     ${CYAN}[DEFAULT]${NOSTYLE}: '$log_path"
+
+}
+
+# A function to generate and animate a spinning loading icon
+# @Usage: _spinner $framerate $spinner_characters_to_use
+_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# @Usage: show_spinner
+# shellcheck disable=SC2120
+show_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  _spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  _SPIN_PID=$!
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+# @Usage: stop_spinner
+stop_spinner() {
+
+  # Check if the _SPIN_PID process is still running or not
+  if ps -p "$_SPIN_PID" >/dev/null; then
+
+    # Kill the spinner PID
+    kill $_SPIN_PID
+
+  fi
+
+}
+
+# A function to ask the user if they want to try again
+# @Usage: _try-again "Question to ask" $function_to_run_again
+# shellcheck disable=SC2120
+_try-again() {
+
+  # Whether or not to try again
+  # Default: y / yes
+  local default_answer="y"
+
+  # Question to ask in the prompt
+  local question=${1:-"Would you like to try again?"}
+
+  # Function to run again if answer is yes/y
+  local func_to_run="$2"
+
+  read -rp "$question [y/n]: " response
+
+  # Anser is the response or the default
+  response=${response:-"$default_answer"}
+
+  # Convert the answer to lowercase
+  response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
+
+  # Check if it's 'y' or 'yes'
+  if [ "$response" == "y" ] || [ "$response" == "yes" ]; then
+
+    # Check if the second argument is supplied
+    if [ -n "$func_to_run" ]; then
+
+      # Run the supplied function
+      "$2"
+
+    fi
+
+    # We ARE going to try again
+    return 0
+
+  else
+
+    # We ARE NOT going to try again
+    return 1
+
+  fi
+
+}
+
+# Function to ask for the log file
+# @Usage: _ask-for-logfile
+_ask-for-logfile() {
+
+  # Holds the user's response
+  local response=""
+
+  # Ask the user where the log file is
+  # With path completion with tab
+  read -re -p "Path to log file: " response
+
+  # Check to ensure the file is valid
+  if [ ! -f "$response" ]; then
+
+    # Supplied path is not a valid file
+    echo >&2 -e "${RED}[ERROR]${NOSTYLE}: Specified file is not valid, evaluating '$response'\n"
+    
+    # Ask if we want to enter a different file path
+    _try-again "Would you like to try a different file?" _ask-for-logfile
+
+  fi
+
+  # Update the $log_path with the provided path
+  log_path="$response"
+
+  # Return success
+  return 0
+
+}
+
+# ---------------- #
+# SCRIPT FUNCTIONS #
+# ---------------- #
+
+# Function to check the validity of the provided log file
+# @Usage: check-log-file
+check-log-file () {
+
+  # Check if the provided file is valid or not
+  if [ ! -f "$log_path" ]; then
+
+    # The file is not valid/doesn't exist
+    echo >&2 -e "${RED}[ERROR]${NOSTYLE}: Specified log file could not be found at '$log_path'."
+
+    # Ask for the log file path since it's not valid
+    if ! _ask-for-logfile; then
+
+      # Another invalid log file or user declined to enter the path again
+      echo "Exiting script..."
+      exit 1
+
+    fi
+
+  fi
+
+}
+
+# Function to color code the log entries based on their type
+# Error: RED
+# Warn: ORANGE
+# INFO: CYAN
+# DEBUG: YELLOW
+#
+# @Usage: output=$(color-code-log)
+# @Return: The color-coded output
+color-code-log() {
+
+  # Color code log entries (if enabled)
+  if [ "$color_code" == "enabled" ]; then
+
+    # Color coding is enabled
+    # Color code the entries and save it to a variable
+    # Add the ERROR colors
+    local log_data=$(sed 's/(\[error[^\]]+\])/\033[0;31m\1\033[0m/gi' "$log_path")
+
+    cat "$log_path"
+
+  fi
+
+}
+
+# ---------------------- #
+# -| ARGUMENT PARSING |- #
+# ---------------------- #
+
+# Parse the command line arguments for this script
+# @Usage: parse-args "$@"
+parse-args() {
+
+  # Check if there are any arguments provided
+  if [ "$#" -ne 0 ]; then
+
+    # There are arguments provided
+    # Transform long options to short ones
+    for arg in "$@"; do
+
+      shift
+
+      case "$arg" in
+      "--help") set -- "$@" "-h" ;;
+      "--color") set -- "$@" "-c" ;;
+      *) set -- "$@" "$arg" ;;
+
+      esac
+
+    done
+
+    # Parse short options
+    while getopts ":hcf:" options; do
+
+      # Check the different flags
+      case $options in
+      # Dispaly the usage information
+      "h")
+        usage
+        exit 0
+        ;;
+      "f") log_path="$OPTARG" ;;
+      "c") color_code="enabled" ;;
+      # Unrecognized option
+      \?)
+
+        # Let them know we have an unrecognized option
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}unrecognized option${NOSTYLE} --> $OPTARG"
+
+        # Print the usage information
+        usage
+
+        # Exit with an error
+        exit 1
+        ;;
+      :)
+
+        # Signal that one of the options requires an argument and is missing it
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}[ERROR]:${NOSTYLE} Option -$OPTARG requires an argument"
+
+        # Print the usage information
+        usage
+
+        # Exit with an error
+        exit 1
+        ;;
+      esac
+
+    done
+
+  fi # End - Argument parsing conditional
+
+  # Remove the processed arguments
+  shift $((OPTIND - 1))
+
+}
+
+# ----------------- #
+# MAIN SCRIPT LOGIC #
+# ----------------- #
+
+# Parse script arguments
+parse-args "$@"
+
+# Check provided log file
+check-log-file
+
+# Color code log entries based on their type
+color-code-log
