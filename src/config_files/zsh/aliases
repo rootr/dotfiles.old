@@ -1,16 +1,21 @@
 #!/bin/env bash
 
+# ------------ #
+# IMPORT FILES #
+# ------------ #
+
 # shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/variables
 source "$HOME/.dotfiles/src/config_files/zsh/variables"
 
 # shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/functions
 source "$HOME/.dotfiles/src/config_files/zsh/functions"
 
-# -----------------------------
-#     MAKE TERMINAL BETTER
-# -----------------------------
+# -------------------- #
+# MAKE TERMINAL BETTER #
+# -------------------- #
 
-alias ll='exa -lha'
+# Run exa command if it's installed, otherwise fallback to ls -la command
+alias ll='command -v exa && exa -lha || ls -la --color=always'
 
 alias c='clear'
 alias cll='c;ll'

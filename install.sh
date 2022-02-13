@@ -3,12 +3,12 @@
 # VERSION: 0.1.2
 # ---------------------------------------------------------------------------------------- #
 # Usage: 0]} [-h | --help] [-d | --debug] [-f <FILE_PATH> | --file <FILE_PATH>]
-# 
+#
 #   Parse through Jamf log file
-# 
+#
 #   Options:
 #     -h, --help              Display this usage help
-# 
+#
 #     -f, --file <FILE_PATH>  Config file to list hosts from     [DEFAULT]: '$log_path"
 # ---------------------------------------------------------------------------------------- #
 # Copyright 2022 Martin Cox
@@ -457,23 +457,23 @@ check-deps() {
     "all")
       deps_to_check=$req_deps_all
       ;;
-    
+
     "macos")
       deps_to_check=$req_deps_macos
       ;;
-    
+
     "kali")
       deps_to_check=$req_deps_kali
       ;;
-    
+
     "ubuntu")
       deps_to_check=$req_deps_ubuntu
       ;;
-    
+
     "arch")
       deps_to_check=$req_deps_arch
       ;;
-    
+
     *)
       # Not recognized OS to check
       echo >&2 "${FUNCNAME[0]} \033[0;31m[ERROR]\033[0m: Unrecognized OS to check in arguments"
@@ -484,7 +484,7 @@ check-deps() {
   for dep in $deps_to_check; do
 
     # Check if the command is valid in this system
-    # If the command is not valid, add it to the list of 
+    # If the command is not valid, add it to the list of
     # dependencies to install later
     is-installed "$dep" || pkgs_to_install+=("$dep")
 
@@ -542,12 +542,12 @@ if [ ! -d "$HOME/.dotfiles" ]; then
 		# There was an issue renaming the directory
 		echo -ne "\033[0;31m[ERROR]\033[0m: There was an error renaming the dotfiles directory [$?]\n"
 		exit $?
-	
+
 	else
 
 		# The rename was successful
 		echo -ne "\033[0;32m[DONE]\033[0m: Successfully renamed dotfiles\n"
-	
+
 	fi
 
 fi
@@ -589,7 +589,8 @@ echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 #  echo -ne "\033[0;31m[DONE]\033[0m: The current shell is not using zsh\n"
 
 #fi
-=======
+
+# ===================
 # Change shell to zsh
 # NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
 
@@ -598,3 +599,4 @@ echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #
 # ------------------------------ #
+

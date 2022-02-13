@@ -45,6 +45,9 @@ export CONFIGRC='.zshrc'
 # Directory containing the config file modules
 export CONFIG_DIR="$HOME/.dotfiles"
 
+# Set the default editor in Terminal
+export EDITOR="/usr/bin/nano"
+
 # ------------ #
 # BINARY PATHS #
 # ------------ #
@@ -67,11 +70,11 @@ export PATH="$PATH:$HOME/Library/Python/3.8/bin"
 # Global Composer PATH
 export PATH="$PATH:$HOME/.composer/vender/bin"
 
+# Path to cargo installed binaries
+export PATH="$PATH:$HOME/.cargo/bin"
+
 # .dotfiles bin path (custom executables)
 export PATH="$PATH:$CONFIG_DIR/bin"
-
-# Set the default editor in Terminal
-export EDITOR="/usr/bin/nano"
 
 # ---------------- #
 # GLOBAL NODE PATH #
