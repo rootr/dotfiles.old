@@ -563,7 +563,6 @@ fi
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
-<<<<<<< HEAD
 echo -ne "Ensuring zsh is installed... "
 
 sleep 0.5
@@ -593,7 +592,6 @@ echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 =======
 # Change shell to zsh
 # NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
->>>>>>> fb039a9a0c611ff96311ac4fe8d23e37d829ad09
 
 # Change source to ~/.zshrc
 
