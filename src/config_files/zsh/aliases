@@ -39,3 +39,6 @@ alias getpip='curl -ks https://ipinfo.io/ip'
 alias grep='grep --color=always'
 
 alias path='echo -e ${PATH//:/\\n}'
+
+# Python3 aliases
+alias py="python3"
