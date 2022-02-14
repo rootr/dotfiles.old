@@ -3,12 +3,12 @@
 # VERSION: 0.1.2
 # ---------------------------------------------------------------------------------------- #
 # Usage: 0]} [-h | --help] [-d | --debug] [-f <FILE_PATH> | --file <FILE_PATH>]
-# 
+#
 #   Parse through Jamf log file
-# 
+#
 #   Options:
 #     -h, --help              Display this usage help
-# 
+#
 #     -f, --file <FILE_PATH>  Config file to list hosts from     [DEFAULT]: '$log_path"
 # ---------------------------------------------------------------------------------------- #
 # Copyright 2022 Martin Cox
@@ -457,23 +457,23 @@ check-deps() {
     "all")
       deps_to_check=$req_deps_all
       ;;
-    
+
     "macos")
       deps_to_check=$req_deps_macos
       ;;
-    
+
     "kali")
       deps_to_check=$req_deps_kali
       ;;
-    
+
     "ubuntu")
       deps_to_check=$req_deps_ubuntu
       ;;
-    
+
     "arch")
       deps_to_check=$req_deps_arch
       ;;
-    
+
     *)
       # Not recognized OS to check
       echo >&2 "${FUNCNAME[0]} \033[0;31m[ERROR]\033[0m: Unrecognized OS to check in arguments"
@@ -484,7 +484,7 @@ check-deps() {
   for dep in $deps_to_check; do
 
     # Check if the command is valid in this system
-    # If the command is not valid, add it to the list of 
+    # If the command is not valid, add it to the list of
     # dependencies to install later
     is-installed "$dep" || pkgs_to_install+=("$dep")
 
@@ -526,6 +526,33 @@ os_name=$(get-os_name)
 
 # --> If it is empty, skip and proceed to next step
 
+# ------------------- #
+# RENAME DOTFILES DIR #
+# ------------------- #
+
+# Check if the dotfiles dir is renamed or not
+if [ ! -d "$HOME/.dotfiles" ]; then
+
+	# The dir is currently not named '.dotfiles'
+	echo -n "Renaming dotfiles directory... "
+
+	# Attempt to rename the dotfiles directory to '.dotfiles'
+	if ! mv "$HOME/dotfiles" "$HOME/.dotfiles"; then
+
+		# There was an issue renaming the directory
+		echo -ne "\033[0;31m[ERROR]\033[0m: There was an error renaming the dotfiles directory [$?]\n"
+		exit $?
+
+	else
+
+		# The rename was successful
+		echo -ne "\033[0;32m[DONE]\033[0m: Successfully renamed dotfiles\n"
+
+	fi
+
+fi
+
+
 # -------------------- #
 # SYMLINK CONFIG FILES #
 # -------------------- #
@@ -536,6 +563,34 @@ os_name=$(get-os_name)
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
+echo -ne "Ensuring zsh is installed... "
+
+sleep 0.5
+
+# Check to be sure that zsh is already installed
+if ! is_installed zsh >/dev/null 2>&1; then
+
+  # zsh is not installed
+  echo >&2 -ne "\033[0;31mzsh not currently installed\033[0m\n"
+  exit 1
+
+fi
+
+echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
+
+#echo -ne "Checking if zsh is set as the shell... "
+
+#sleep 0.5
+
+# Check if zsh is the shell already or not
+#if [[ "$(echo $SHELL)" != *"zsh"* ]]; then
+
+  # zsh IS NOT set for the shell yet
+#  echo -ne "\033[0;31m[DONE]\033[0m: The current shell is not using zsh\n"
+
+#fi
+
+# ===================
 # Change shell to zsh
 # NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
 
@@ -544,3 +599,4 @@ os_name=$(get-os_name)
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #
 # ------------------------------ #
+

@@ -1,16 +1,21 @@
 #!/bin/env bash
 
+# ------------ #
+# IMPORT FILES #
+# ------------ #
+
 # shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/variables
 source "$HOME/.dotfiles/src/config_files/zsh/variables"
 
 # shellcheck source=/Users/martin.cox/.dotfiles/src/config_files/zsh/functions
 source "$HOME/.dotfiles/src/config_files/zsh/functions"
 
-# -----------------------------
-#     MAKE TERMINAL BETTER
-# -----------------------------
+# -------------------- #
+# MAKE TERMINAL BETTER #
+# -------------------- #
 
-alias ll='exa -lha'
+# Run exa command if it's installed, otherwise fallback to ls -la command
+alias ll='command -v exa >/dev/null 2>&1 && exa -lha || ls -la --color=always'
 
 alias c='clear'
 alias cll='c;ll'
@@ -40,5 +45,23 @@ alias grep='grep --color=always'
 
 alias path='echo -e ${PATH//:/\\n}'
 
+# ------------------ #
+# ADDITIONAL ALIASES #
+# ------------------ #
+
 # Python3 aliases
 alias py="python3"
+
+# Apply updated .Xresources configurations
+alias uxr='[ -f ~/.Xresources ] && xrdb -merge -I$HOME ~/.Xresources || echo >&2 "\033[0;31m[ERROR]\033[0m: File not found: $HOME/.Xresources"'
+
+# Run the connectToWpa.sh script in ~/scripts/
+# TODO: Change this so the username isn't static (maybe add it to .dotfiles/bin)
+alias cwpa='sudo /home/rootr/scripts/connectToWpa.sh'
+
+# Alias to disable the touchpad point from randomly clicking and selecting
+# This alias is specific to the Surface Pro 3 on Arch Linux
+alias disable_touchpad='command -v xinput >/dev/null 2>&1 && xinput disable "NTRG0001:01 1B96:1B05" || echo >&2 "\033[0;31m[ERROR]\033[0m: xinput command not found"'
+
+# List only the Devices and their disks
+alias disks='sudo fdisk -l | grep Device -A3'

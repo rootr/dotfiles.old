@@ -8,9 +8,19 @@ source "$HOME/.dotfiles/src/config_files/zsh/variables"
 cd() {
 
   builtin cd "$@" || return
-  exa -lha
 
-  # TODO: Add check to see if exa is installed or not
+  # Check if we've got exa installed or not
+  if command -v exa >/dev/null 2>&1; then
+
+    exa -lha
+
+  else
+
+    # Exa is not currently installed
+    # proceed with normal ls command
+    ls -la --color=always
+
+  fi
 
 } # End - cd replacement function
 

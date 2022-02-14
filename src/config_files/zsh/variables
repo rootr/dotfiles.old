@@ -1,10 +1,11 @@
 #!/bin/env bash
 
-# -------------------------------
-#        GLOBAL VARIABLES
-# -------------------------------
+# ---------------- #
+# COLOR VARIABLES  #
+# ---------------- #
 
 export NOSTYLE='\033[0m'
+export NS='\033[0m'
 
 export RED='\033[0;31m'
 export GREEN='\033[0;32m'
@@ -22,6 +23,10 @@ export LIGHTPURPLE='\033[1;35m'
 export LIGHTCYAN='\033[1;36m'
 export WHITE='\033[1;37m'
 
+# ----------- #
+# TEXT STYLES #
+# ----------- #
+
 export BOLD='\033[1m'
 export DIM='\033[2m'
 export ITALIC='\033[3m'
@@ -30,12 +35,9 @@ export BLINKING='\033[5m'
 export REVERSE='\033[7m'
 export INVISIBLE='\033[8m'
 
-# -------------------------------
-#    ENVIRONMENT CONFIGURATION
-# -------------------------------
-
-# Global options
-# ------------------------------------------------------------
+# ------------------------- #
+# ENVIRONMENT CONFIGURATION #
+# ------------------------- #
 
 # The shell config file of choice
 export CONFIGRC='.zshrc'
@@ -43,17 +45,21 @@ export CONFIGRC='.zshrc'
 # Directory containing the config file modules
 export CONFIG_DIR="$HOME/.dotfiles"
 
-# Set Paths
-# ------------------------------------------------------------
+# Set the default editor in Terminal
+export EDITOR="/usr/bin/nano"
 
-# General paths
-export PATH="$PATH:/usr/local/bin:usr/local:/usr/local/sbin"
+# ------------ #
+# BINARY PATHS #
+# ------------ #
+
+# Default PATH (Arch Linux)
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin"
+
+# Perl bin paths
+export PATH="$PATH:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl"
 
 # MySQL
 export PATH="$PATH:/usr/local/mysql/bin"
-
-# Set the default editor in Terminal
-export EDITOR="/usr/bin/nano"
 
 # git
 export PATH="$PATH:/usr/local/git/bin:/sw/bin"
@@ -64,8 +70,14 @@ export PATH="$PATH:$HOME/Library/Python/3.8/bin"
 # Global Composer PATH
 export PATH="$PATH:$HOME/.composer/vender/bin"
 
-# Global Node PATH
-export NODE_PATH="/usr/local/lib/node_modules"
+# Path to cargo installed binaries
+export PATH="$PATH:$HOME/.cargo/bin"
 
-# .dotfiles bin path (custom scripts)
-export PATH="$CONFIG_DIR/bin:$PATH"
+# .dotfiles bin path (custom executables)
+export PATH="$PATH:$CONFIG_DIR/bin"
+
+# ---------------- #
+# GLOBAL NODE PATH #
+# ---------------- #
+
+export NODE_PATH="/usr/local/lib/node_modules"
