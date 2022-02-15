@@ -49,3 +49,24 @@ wait_ssh() {
   echo "Done pinging, cancelled=$ping_cancelled"
 
 }
+
+# Lists the directory contents in a readable format
+# using 'exa' and falling back to ls -la --color=always
+list_contents() {
+
+  # Check if exa is installed
+  if command -v exa >/dev/null 2>&1; then
+
+    # exa is installed
+    exa -lha "$@"
+
+    return 0
+
+  fi
+
+  # Otherwise, fallback to using the ls command
+  ls -la --color=always "$@"
+
+  return 0
+
+}

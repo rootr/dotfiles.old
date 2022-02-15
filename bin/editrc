@@ -60,11 +60,18 @@ usage() {
 # Check if there are no arguments provided
 if [ "$#" -eq 0 ]; then
 
+  echo -e "${RED}[ERROR]${NOSTYLE}: First argument is required but was not found"
+
   # No arguments were provided
   # Run the usage function
   usage
 
+  exit 1
+
 fi
+
+# Directory containing the config dotfiles
+configDir="$CONFIG_DIR/src/config_files/zsh"
 
 # Check if we're given an argument or not
 if [ -n "$1" ]; then
@@ -73,23 +80,40 @@ if [ -n "$1" ]; then
   case $1 in
 
   "aliases" | "alias" | "a" | "-a")
-    nano "$CONFIG_DIR/src/config_files/zsh/aliases"
+    nano "$configDir/aliases"
     ;;
   "functions" | "function" | "func" | "f" | "-f")
-    nano "$CONFIG_DIR/src/config_files/zsh/functions"
+    nano "$configDir/functions"
     ;;
   "variables" | "variable" | "vars" | "var" | "v" | "-v")
-    nano "$CONFIG_DIR/src/config_files/zsh/variables"
+    nano "$configDir/variables"
     ;;
   *)
-    nano "$CONFIG_DIR/$1"
+    # The file was not one of the above config files
+    echo -e "${RED}[ERROR]${NOSTYLE}: Cannot find config file specified"
+
+    # Show the usage information
+    usage
+
+    exit 1
     ;;
   esac
+
+  # Reload the source after updating the config files
+  # 'urc' is an alias to source the Terminal to ~/.zshrc
+  urc
+
+  # Then exit successfully
+  exit 0
 
 # Otherwise, just default to editing the $configrc rc file
 else
 
   # Open the $configrc file in nano
-  nano ~/"$CONFIGRC"
+  echo -e "${RED}[ERROR]${NOSTYLE}: Cannot find config file specified"
+
+  usage
+
+  exit 1
 
 fi

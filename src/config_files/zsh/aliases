@@ -15,7 +15,9 @@ source "$HOME/.dotfiles/src/config_files/zsh/functions"
 # -------------------- #
 
 # Run exa command if it's installed, otherwise fallback to ls -la command
-alias ll='command -v exa >/dev/null 2>&1 && exa -lha || ls -la --color=always'
+# alias ll='command -v exa >/dev/null 2>&1 && exa -lha || ls -la --color=always'
+alias ll='list_contents'
+
 
 alias c='clear'
 alias cll='c;ll'
@@ -29,9 +31,18 @@ alias .5='cd ../../../../../'
 alias .6='cd ../../../../../../'
 alias ~='cd ~/'
 alias cdssh='cd ~/.ssh'
-alias icloud='cd ~/Library/Mobile\ Documents\com~apple~CloudDocs/'
 
+# ---------------------- #
+# MACOS SPECIFIC ALIASES #
+# ---------------------- #
+
+alias icloud='cd ~/Library/Mobile\ Documents\com~apple~CloudDocs/'
+alias dsk='cll ~/Desktop'
+alias dl='cll ~/Downloads'
 alias fopen='open -a Finder ./'
+
+
+# Refresh the config files after updating them
 alias urc=". ~/\$CONFIGRC"
 
 # Count non-hidden files in cwd
@@ -43,7 +54,7 @@ alias getpip='curl -ks https://ipinfo.io/ip'
 # Grep with color
 alias grep='grep --color=always'
 
-alias path='echo -e ${PATH//:/\\n}'
+alias path='echo -e "${PATH//:/\\n}"'
 
 # ------------------ #
 # ADDITIONAL ALIASES #
