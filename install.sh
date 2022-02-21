@@ -39,9 +39,11 @@
 _SPIN_PID=""
 
 # Colors for messages
-NOSTYLE='\033[0m'
+NS='\033[0m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+BOLD='\033[1m'
+ITALIC='\033[3m'
 
 # ---------------- #
 # GLOBAL FUNCTIONS #
@@ -58,13 +60,18 @@ GREEN='\033[0;32m'
 usage() {
 
   echo -e "
-  Usage: ${BOLD}${FUNCNAME[0]}${NOSTYLE} [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-v${NOSTYLE} | ${BOLD}--verbose${NOSTYLE}]
+  Usage: ${BOLD}${FUNCNAME[0]}${NS} [${BOLD}-h${NS} | ${BOLD}--help${NS}] [${BOLD}-v${NS} | ${BOLD}--verbose${NS}]
 
   Install the required dependencies and symlink the appropriate files for .dotfiles
+  This performs the following actions:
+  - Backup existing dotfiles in ${ITALIC}~/${NS} to ${ITALIC}~/.dotfiles_backup/${NS}
+  - Check for required dependencies
+  - Install required dependencies
+  - Symlink config files from ${ITALIC}~/.dotfiles/src/symlinked/${NS}
 
-  ${DIM}Options:${NOSTYLE}
-    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}              Display this usage help
-    ${BOLD}-v${NOSTYLE}, ${BOLD}--verbose${NOSTYLE}           Print messages verbosely, printing more info"
+  ${DIM}Options:${NS}
+    ${BOLD}-h${NS}, ${BOLD}--help${NS}              Display this usage help
+    ${BOLD}-v${NS}, ${BOLD}--verbose${NS}           Print messages verbosely, showing more info"
 
 }
 
@@ -294,7 +301,7 @@ parse-args() {
       \?)
 
         # Let them know we have an unrecognized option
-        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}unrecognized option${NOSTYLE} --> $OPTARG"
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NS}: ${RED}unrecognized option${NS} --> $OPTARG"
 
         # Print the usage information
         usage
@@ -305,7 +312,7 @@ parse-args() {
       :)
 
         # Signal that one of the options requires an argument and is missing it
-        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NOSTYLE}: ${RED}[ERROR]:${NOSTYLE} Option -$OPTARG requires an argument"
+        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NS}: ${RED}[ERROR]:${NS} Option -$OPTARG requires an argument"
 
         # Print the usage information
         usage
@@ -360,7 +367,7 @@ is-installed() {
   if [ "$#" -eq 0 ]; then
 
 
-    echo >&2 "${FUNCNAME[0]} \033[0;31m[ERROR]\033[0m: Command is required but was not found in arguments"
+    echo >&2 "${FUNCNAME[0]} ${RED}[ERROR]${NS}: Command is required but was not found in arguments"
     return 1
 
   fi
@@ -372,13 +379,13 @@ is-installed() {
 
   if ! command -v "$1" > /dev/null; then
 
-    print-it "\033[0;31m[ERROR]\033[0m: '$1' command not found\n"
+    print-it "${RED}[ERROR]${NS}: '$1' command not found\n"
 
     return 1
 
   fi
 
-  print-it "\033[0;32m[DONE]\033[0m: '$1' command installed\n"
+  print-it "${GREEN}[DONE]${NS}: '$1' command installed\n"
 
   return 0
 
@@ -476,7 +483,7 @@ check-deps() {
 
     *)
       # Not recognized OS to check
-      echo >&2 "${FUNCNAME[0]} \033[0;31m[ERROR]\033[0m: Unrecognized OS to check in arguments"
+      echo >&2 "${FUNCNAME[0]} ${RED}[ERROR]${NS}: Unrecognized OS to check in arguments"
       return 1
 
   esac
@@ -540,13 +547,13 @@ if [ ! -d "$HOME/.dotfiles" ]; then
 	if ! mv "$HOME/dotfiles" "$HOME/.dotfiles"; then
 
 		# There was an issue renaming the directory
-		echo -ne "\033[0;31m[ERROR]\033[0m: There was an error renaming the dotfiles directory [$?]\n"
+		echo -ne "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory [$?]\n"
 		exit $?
 
 	else
 
 		# The rename was successful
-		echo -ne "\033[0;32m[DONE]\033[0m: Successfully renamed dotfiles\n"
+		echo -ne "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
 
 	fi
 
@@ -571,12 +578,12 @@ sleep 0.5
 if ! is_installed zsh >/dev/null 2>&1; then
 
   # zsh is not installed
-  echo >&2 -ne "\033[0;31mzsh not currently installed\033[0m\n"
+  echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
   exit 1
 
 fi
 
-echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
+echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
 
 #echo -ne "Checking if zsh is set as the shell... "
 
@@ -586,7 +593,7 @@ echo -ne "\033[0;32m[DONE]\033[0m: zsh is currently installed\n"
 #if [[ "$(echo $SHELL)" != *"zsh"* ]]; then
 
   # zsh IS NOT set for the shell yet
-#  echo -ne "\033[0;31m[DONE]\033[0m: The current shell is not using zsh\n"
+#  echo -ne "${RED}[DONE]${NS}: The current shell is not using zsh\n"
 
 #fi
 
