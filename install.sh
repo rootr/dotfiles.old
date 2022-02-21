@@ -256,6 +256,10 @@ declare -a pkgs_to_install=()
 # Whether or not we're running in verbose mode
 verbose_mode="disabled"
 
+# Directory containing the config files we're going to
+# be symbolic linking to the ~/ directory
+configFilesDir="$HOME/.dotfiles/src/symlinked"
+
 # ---------------- #
 # SCRIPT FUNCTIONS #
 # ---------------- #
@@ -292,7 +296,7 @@ parse-args() {
       # Dispaly the usage information
       "h")
         usage
-        exit 0
+        return 0
         ;;
       "v") verbose_mode="enabled" ;;
       # Unrecognized option
@@ -304,7 +308,7 @@ parse-args() {
         usage
 
         # Exit with an error
-        exit 1
+        return 1
         ;;
       :)
         # Signal that one of the options requires an argument and is missing it
@@ -314,7 +318,7 @@ parse-args() {
         usage
 
         # Exit with an error
-        exit 1
+        return 1
         ;;
       esac
     done
@@ -462,6 +466,36 @@ check-deps() {
   return 0
 }
 
+# Rename the root dotfiles directory
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: rename-dotfiles_dir
+# @ Return: 0 on success, non-zero on failure
+# -----------------------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+rename-dotfiles_dir() {
+  # Check to see if the directory is already renamed
+  if [ ! -d "$HOME/.dotfiles" ]; then
+    # The root directory is not yet renamed to be hidden
+    print-verbose "Renaming root dotfiles directory... "
+
+    # Rename the root directory to make it hidden
+    # and catch any errors if the command fails
+    if ! mv "$HOME/dotfiles" "$HOME/.dotfiles" >/dev/null 2>&1; then
+      # There was an error with the rename operation
+      print-verbose "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory\n"
+      return 1
+    else
+      print-verbose "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
+    fi
+  else
+    print-verbose "${RED}[ERROR]${NS}: Error locating the dotfiles root directory\n"
+    return 1
+  fi
+}
+
 # ------------------------------------- #
 # -|     MAIN INSTALLATION LOGIC     |- #
 # ------------------------------------- #
@@ -498,45 +532,62 @@ os_name=$(get-os-name)
 # RENAME DOTFILES DIR #
 # ------------------- #
 
-# Check if the dotfiles dir is renamed or not
-if [ ! -d "$HOME/.dotfiles" ]; then
-	# The dir is currently not named '.dotfiles'
-	echo -n "Renaming dotfiles directory... "
-
-	# Attempt to rename the dotfiles directory to '.dotfiles'
-	if ! mv "$HOME/dotfiles" "$HOME/.dotfiles"; then
-		# There was an issue renaming the directory
-		echo -ne "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory [$?]\n"
-		exit $?
-	else
-		# The rename was successful
-		echo -ne "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
-	fi
-fi
+# Rename the dotfiles root directory
+# and exit if it fails
+rename-dotfiles_dir || exit $?
 
 
 # -------------------- #
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
-# Sym link files in /src/symlinked to ~
+print-verbose "Checking source directory for config files... "
+
+# Double check that the source directory is valid
+if [ -d "$configFilesDir" ]; then
+  # "$configFilesDir" is a valid directory
+  print-verbose "${GREEN}[done]${NS}\n"
+
+  # Loop through each file in the "$configFilesDir" directory
+  for filepath in "$configFilesDir"/*; do
+    # Get the base file name
+    filename="$(basename "$filepath")"
+
+    print-verbose "Creating symlink for '$filepath'... "
+
+    # Create a symlink with the current file in the loop
+    # and symlink it to the ~/ directory
+    if ln -s "$filepath" "$HOME/.$filename" >/dev/null 2>&1; then
+      # Error creating symbolic link
+      print-verbose "${GREEN}[done]${NS}\n"
+    else
+      # Error creating symbolic link
+      print-verbose "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
+      exit 1
+    fi
+  done
+else
+  print-verbose "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
+  exit 1
+fi
+
 
 # ------------------- #
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
-echo -ne "Ensuring zsh is installed... "
+# echo -ne "Ensuring zsh is installed... "
 
-sleep 0.5
+# sleep 0.5
 
-# Check to be sure that zsh is already installed
-if ! is_installed zsh >/dev/null 2>&1; then
-  # zsh is not installed
-  echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
-  exit 1
-fi
+# # Check to be sure that zsh is already installed
+# if ! is_installed zsh >/dev/null 2>&1; then
+#   # zsh is not installed
+#   echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
+#   exit 1
+# fi
 
-echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
+# echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
 
 #echo -ne "Checking if zsh is set as the shell... "
 
@@ -559,4 +610,3 @@ echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #
 # ------------------------------ #
-
