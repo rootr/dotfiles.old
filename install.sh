@@ -30,6 +30,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 # IN THE SOFTWARE.
 # ----------------------------------------------------------------------------
+
 # ---------------- #
 # GLOBAL VARIABLES #
 # ---------------- #
@@ -45,6 +46,9 @@ GREEN='\033[0;32m'
 BOLD='\033[1m'
 ITALIC='\033[3m'
 
+# Name of this installation script
+scriptName="${FUNCNAME[0]}"
+
 # ---------------- #
 # GLOBAL FUNCTIONS #
 # ---------------- #
@@ -58,9 +62,8 @@ ITALIC='\033[3m'
 # @ Global Variables: NONE
 # -------------------------------------------
 usage() {
-
   echo -e "
-  Usage: ${BOLD}${FUNCNAME[0]}${NS} [${BOLD}-h${NS} | ${BOLD}--help${NS}] [${BOLD}-v${NS} | ${BOLD}--verbose${NS}]
+  Usage: ${BOLD}$scriptName${NS} [${BOLD}-h${NS} | ${BOLD}--help${NS}] [${BOLD}-v${NS} | ${BOLD}--verbose${NS}]
 
   Install the required dependencies and symlink the appropriate files for .dotfiles
   This performs the following actions:
@@ -72,7 +75,6 @@ usage() {
   ${DIM}Options:${NS}
     ${BOLD}-h${NS}, ${BOLD}--help${NS}              Display this usage help
     ${BOLD}-v${NS}, ${BOLD}--verbose${NS}           Print messages verbosely, showing more info"
-
 }
 
 # A function to generate and animate a spinning loading icon
@@ -87,19 +89,15 @@ usage() {
 # @ Global Variables: NONE
 # -----------------------------------------------------------
 _spinner() {
-
   # Duration between each frame of the animation
   local framerate=$1
-
   # Characters to animate for the spinner
   local spinner=$2
-
   # Number of animation frames to use
   local total_frames=$((${#spinner} - 1))
 
   # Animate the spinner indefinitely (until killed)
   while :; do
-
     # Loop through each character in the spinner
     for i in $(seq 0 $total_frames); do
 
@@ -111,9 +109,7 @@ _spinner() {
 
       # Wait $framerate for the next frame
       sleep "$framerate"
-
     done
-
   done
 
 }
@@ -129,22 +125,18 @@ _spinner() {
 # -------------------------------------------
 # shellcheck disable=SC2120
 show_spinner() {
-
   # Duration between each frame of the animation
   local framerate=${1:-0.2}
-
   # Characters to animate for the spinner
   local spinner=${2:-"/|\\-/|\\-"}
 
   # Start showing the spinner animation
   _spinner "$framerate" "$spinner" &
-
   # Update the $_SPIN_PID global variable
   _SPIN_PID=$!
 
   # Kill the spinner on any signal, including our own exit
   trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
-
 }
 
 # Function to kill the spinner on demand
@@ -157,18 +149,14 @@ show_spinner() {
 # --> $_SPIN_PID - Resets back to ""
 # -------------------------------------------
 stop_spinner() {
-
   # Check if the _SPIN_PID process is still running or not
   if ps -p "$_SPIN_PID" >/dev/null; then
-
     # Kill the spinner PID
     kill $_SPIN_PID
 
     # Clear the $_SPIN_PID value
     _SPIN_PID=""
-
   fi
-
 }
 
 # A function to ask the user if they want to try again
@@ -181,14 +169,11 @@ stop_spinner() {
 # -------------------------------------------
 # shellcheck disable=SC2120
 _try-again() {
-
   # Whether or not to try again
   # Default: y / yes
   local default_answer="y"
-
   # Question to ask in the prompt
   local question=${1:-"Would you like to try again?"}
-
   # Function to run again if answer is yes/y
   local func_to_run="$2"
 
@@ -202,37 +187,55 @@ _try-again() {
 
   # Check if it's 'y' or 'yes'
   if [ "$response" == "y" ] || [ "$response" == "yes" ]; then
-
     # Check if the second argument is supplied
     if [ -n "$func_to_run" ]; then
-
       # Run the supplied function
       "$2"
-
     fi
 
     # We ARE going to try again
     return 0
-
   else
-
     # We ARE NOT going to try again
     return 1
+  fi
+}
 
+# Function to print messages if we're in verbose mode
+# -------------------------------------------
+# @ Arguments: [STRING] --> Message to print
+# @ Usage: print-verbose "Message to print"
+# @ Return: Prints message (no return)
+# -------------------------------------------
+# @ Global Variables: NONE
+# -------------------------------------------
+print-verbose() {
+  # Message to print
+  local msg="$1"
+
+  # Double check that the $msg argument was provided
+  if [ -z "$msg" ]; then
+    # An argumetn was not provided
+    print-verbose "${RED}[ERROR]${NS}: ${FUNCNAME[0]} - 'Message' argument is required but was not found"
   fi
 
+  # Only print if we're in 'verbose mode'
+  [ "$verbose_mode" == "enabled" ] && echo -ne "$msg"
 }
 
 # ---------------- #
 # SCRIPT VARIABLES #
 # ---------------- #
 
+# Optional packages to install on the machine
+# optional_packages="code dkms firefox jq speedtest-cli pup nmap"
+
 # General required packages for the config files
 # These dependencies are required on all distributions/systems
-req_deps_all="exa curl git gh nmap pup nano"
+req_deps_all="exa curl git nano"
 
 # Required packages for Arch Linux installations
-req_deps_arch="yay dhcpcd wpa_supplicant sudo ssh acpi"
+req_deps_arch="yay-git dhcpcd wpa_supplicant sudo ssh acpi man-db openssh pkgfile ufw unzip xdotool zip wget dmenu feh i3-gaps i3lock-color i3status inetutils lightdm lightdm-gtk-greeter xorg xterm code dkms firefox jq speedtest-cli pup nmap"
 
 # Required packages for Ubuntu Linux installations
 req_deps_ubuntu=""
@@ -267,28 +270,23 @@ verbose_mode="disabled"
 # --> $verbose_mode
 # -------------------------------------------
 parse-args() {
-
   # Check if there are any arguments provided
   if [ "$#" -ne 0 ]; then
+    # There ARE arguments provided
 
-    # There are arguments provided
     # Transform long options to short ones
     for arg in "$@"; do
-
       shift
 
       case "$arg" in
-      "--help") set -- "$@" "-h" ;;
-      "--verbose") set -- "$@" "-v" ;;
-      *) set -- "$@" "$arg" ;;
-
+        "--help") set -- "$@" "-h" ;;
+        "--verbose") set -- "$@" "-v" ;;
+        *) set -- "$@" "$arg" ;;
       esac
-
     done
 
     # Parse short options
     while getopts ":hv:" options; do
-
       # Check the different flags
       case $options in
       # Dispaly the usage information
@@ -299,9 +297,8 @@ parse-args() {
       "v") verbose_mode="enabled" ;;
       # Unrecognized option
       \?)
-
         # Let them know we have an unrecognized option
-        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NS}: ${RED}unrecognized option${NS} --> $OPTARG"
+        echo >&2 -e "${BOLD}$scriptName${NS}: ${RED}unrecognized option${NS} --> $OPTARG"
 
         # Print the usage information
         usage
@@ -310,9 +307,8 @@ parse-args() {
         exit 1
         ;;
       :)
-
         # Signal that one of the options requires an argument and is missing it
-        echo >&2 -e "${BOLD}${FUNCNAME[0]}${NS}: ${RED}[ERROR]:${NS} Option -$OPTARG requires an argument"
+        echo >&2 -e "${BOLD}$scriptName${NS}: ${RED}[ERROR]:${NS} Option ${BOLD}-$OPTARG${NS} requires an argument"
 
         # Print the usage information
         usage
@@ -321,37 +317,11 @@ parse-args() {
         exit 1
         ;;
       esac
-
     done
-
-  fi # End - Argument parsing conditional
+  fi # End - Check for empty arguments
 
   # Remove the processed arguments
   shift $((OPTIND - 1))
-
-}
-
-# Function to print messages if we're in verbose mode
-# -------------------------------------------
-# @ Arguments: [STRING] --> Message to print
-# @ Usage: print-verbose "Message to print"
-# @ Return: Prints message (no return)
-# -------------------------------------------
-# @ Global Variables: NONE
-# -------------------------------------------
-print-it() {
-
-  # Message to print
-  local msg="$1"
-
-  # Check if we're running verbosely or not
-  if [ "$verbose_mode" == "enabled" ]; then
-
-    #  We ARE printing verbosely
-    echo -ne "$msg"
-
-  fi
-
 }
 
 # Function to check if the a specified bin is installed
@@ -363,32 +333,29 @@ print-it() {
 # @ Global Variables: NONE
 # -------------------------------------------
 is-installed() {
-
+  # Throw an error if no argument is provided
   if [ "$#" -eq 0 ]; then
-
-
-    echo >&2 "${FUNCNAME[0]} ${RED}[ERROR]${NS}: Command is required but was not found in arguments"
+    echo >&2 "$scriptName ${RED}[ERROR]${NS}: Command is required but was not found in arguments"
     return 1
-
   fi
 
-  print-it "Checking for presence of '$1' command... "
+  print-verbose "Checking for presence of '$1'... "
 
   # Allow time to read the message
   sleep 0.5
 
+  # Check if the command is found or not
   if ! command -v "$1" > /dev/null; then
+    # Command is not found on the system
 
-    print-it "${RED}[ERROR]${NS}: '$1' command not found\n"
+    print-verbose "${RED}[ERROR]${NS}: '$1' command not found\n"
 
     return 1
-
   fi
 
-  print-it "${GREEN}[DONE]${NS}: '$1' command installed\n"
+  print-verbose "${GREEN}[DONE]${NS}: '$1' command installed\n"
 
   return 0
-
 }
 
 # Function to check which OS we're running on
@@ -400,27 +367,32 @@ is-installed() {
 # @ Global Variables: NONE
 # -------------------------------------------
 get-os-name() {
-
   # Get the type of kernel we're on (Linux / macOS)
   # Also convert it to lowercase
   local kernel_type=""
         kernel_type=$(uname | tr '[:upper:]' '[:lower:]')
 
-  # Check if we're on Linux or macOS
+  # Check if we're on macOS
   if [ "$kernel_type" == "darwin" ]; then
-
     # We're running on macOS
     echo -ne "macos"
     return 0
+  fi
 
+  print-verbose "Checking for os-release file... "
+
+  # Check for the presence of the /etc/os-release file (only on Linux)
+  if [ ! -f /etc/os-release ]; then
+    # The /etc/os-release file does not exist
+    print-verbose "${RED}[ERROR]${NS}: Error locating ${ITALIC}/etc/os-release${NS} file"
+    return 1
   fi
 
   # Otherwise, get the Linux distro we're running on (convert it to lowercase)
   local linux_distro=""
-        linux_distro=$(grep -E '^NAME' /etc/os-release | grep -Eio '"[^"]+\"$' | sed 's/"//g' | tr '[:upper:]' '[:lower:]')
+        linux_distro=$(awk -F'"' '/^NAME/ { print tolower($2) }' /etc/os-release)
 
   case "$linux_distro" in
-
     "arch" | "arch linux")
       echo -ne "arch"
       ;;
@@ -437,7 +409,6 @@ get-os-name() {
   esac
 
   return 0
-
 }
 
 # Check which dependencies need to be installed for all machines
@@ -451,7 +422,6 @@ get-os-name() {
 # -------------------------------------------
 # shellcheck disable=SC2120
 check-deps() {
-
   # Which OS to check dependencies for
   # @default: pkgs that are required on ALL systems
   local os_to_check=${1:-"all"}
@@ -460,57 +430,48 @@ check-deps() {
   local deps_to_check=""
 
   case "$os_to_check" in
-
     "all")
       deps_to_check=$req_deps_all
       ;;
-
     "macos")
       deps_to_check=$req_deps_macos
       ;;
-
     "kali")
       deps_to_check=$req_deps_kali
       ;;
-
     "ubuntu")
       deps_to_check=$req_deps_ubuntu
       ;;
-
     "arch")
       deps_to_check=$req_deps_arch
       ;;
-
     *)
       # Not recognized OS to check
-      echo >&2 "${FUNCNAME[0]} ${RED}[ERROR]${NS}: Unrecognized OS to check in arguments"
+      echo >&2 "$scriptName ${RED}[ERROR]${NS}: Unrecognized OS to check in arguments"
       return 1
-
   esac
 
   for dep in $deps_to_check; do
-
     # Check if the command is valid in this system
     # If the command is not valid, add it to the list of
     # dependencies to install later
     is-installed "$dep" || pkgs_to_install+=("$dep")
-
   done
 
   # Return success
   return 0
-
 }
 
-# ---------------------- #
-# -| ARGUMENT PARSING |- #
-# ---------------------- #
+# ------------------------------------- #
+# -|     MAIN INSTALLATION LOGIC     |- #
+# ------------------------------------- #
+
 # Parse the script arguments (if any)
 parse-args "$@"
 
 # Get the name of the OS we're running on currently
 # Possible values: macos, arch, ubuntu, kali or unknown
-os_name=$(get-os_name)
+os_name=$(get-os-name)
 
 # ------------------ #
 # CHECK DEPENDENCIES #
@@ -539,24 +500,18 @@ os_name=$(get-os_name)
 
 # Check if the dotfiles dir is renamed or not
 if [ ! -d "$HOME/.dotfiles" ]; then
-
 	# The dir is currently not named '.dotfiles'
 	echo -n "Renaming dotfiles directory... "
 
 	# Attempt to rename the dotfiles directory to '.dotfiles'
 	if ! mv "$HOME/dotfiles" "$HOME/.dotfiles"; then
-
 		# There was an issue renaming the directory
 		echo -ne "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory [$?]\n"
 		exit $?
-
 	else
-
 		# The rename was successful
 		echo -ne "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
-
 	fi
-
 fi
 
 
@@ -576,11 +531,9 @@ sleep 0.5
 
 # Check to be sure that zsh is already installed
 if ! is_installed zsh >/dev/null 2>&1; then
-
   # zsh is not installed
   echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
   exit 1
-
 fi
 
 echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
