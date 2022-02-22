@@ -70,3 +70,9 @@ list_contents() {
   return 0
 
 }
+
+get-devices() {
+  devicesJSON=$(curl -ks "http://10.0.0.145:49090/1/devices?auth=17E22BFD1D3")
+
+  echo "$devicesJSON"
+}
