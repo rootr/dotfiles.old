@@ -60,11 +60,18 @@ usage() {
 # Check if there are no arguments provided
 if [ "$#" -eq 0 ]; then
 
+  echo -e "${RED}[ERROR]${NOSTYLE}: First argument is required but was not found"
+
   # No arguments were provided
   # Run the usage function
   usage
 
+  return 1
+
 fi
+
+# Directory containing the config dotfiles
+configDir="$CONFIG_DIR/src/config_files/zsh"
 
 # Check if we're given an argument or not
 if [ -n "$1" ]; then
@@ -73,23 +80,46 @@ if [ -n "$1" ]; then
   case $1 in
 
   "aliases" | "alias" | "a" | "-a")
-    nano "$CONFIG_DIR/src/config_files/zsh/aliases"
+    nano "$configDir/aliases"
     ;;
   "functions" | "function" | "func" | "f" | "-f")
-    nano "$CONFIG_DIR/src/config_files/zsh/functions"
+    nano "$configDir/functions"
     ;;
   "variables" | "variable" | "vars" | "var" | "v" | "-v")
-    nano "$CONFIG_DIR/src/config_files/zsh/variables"
+    nano "$configDir/variables"
     ;;
   *)
-    nano "$CONFIG_DIR/$1"
+    # The file was not one of the above config files
+    echo -e "${RED}[ERROR]${NOSTYLE}: Cannot find config file specified"
+
+    # Show the usage information
+    usage
+
+    return 1
     ;;
   esac
 
-# Otherwise, just default to editing the $configrc rc file
+  # Reload the source after updating the config files
+
+  if ! source ~/.zshrc; then
+    echo >&2 -e "${RED}[ERROR]${NS}: Error updating the shell with the changes: [EXIT: $?]\n"
+    echo >&2 -e "Try manually updating the config with '${ITALIC}urc${NS}' ${BOLD}OR${NS} '${ITALIC}. ~/.zshrc${NS}'"
+    return 1
+  else
+    echo -e "${GREEN}SUCCESSFULLY UPDATED CONFIG${NS}"
+
+    # Then exit successfully
+    return 0
+  fi
+
+# Otherwise, throw an error and print the usage information
 else
 
   # Open the $configrc file in nano
-  nano ~/"$CONFIGRC"
+  echo -e "${RED}[ERROR]${NOSTYLE}: Cannot find config file specified"
+
+  usage
+
+  return 1
 
 fi
