@@ -76,3 +76,6 @@ alias disable_touchpad='command -v xinput >/dev/null 2>&1 && xinput disable "NTR
 
 # List only the Devices and their disks
 alias disks='sudo fdisk -l | grep Device -A3'
+
+# Alias to edit the zsh config source files
+alias editrc='source ~/.dotfiles/bin/editrc'
