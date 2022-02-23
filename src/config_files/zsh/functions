@@ -128,3 +128,47 @@ install-brew() {
     return 1
   fi
 }
+
+# Function to pull the latest version of the dotfiles git
+update-dotfiles() {
+  # Get the current directory we're in
+  originalDir=$(pwd)
+
+  # Path to the dotfiles directory
+  dotfilesDir="$HOME/.dotfiles"
+
+  # CD to the dotfiles directory
+  # After checking that it exists
+  if [ -d "$dotfilesDir" ]; then
+    # The directory does indeed exist
+    # CD into the dotfiles directory
+    echo -n "Changing to dotfiles directory... "
+    
+    if ! cd "$dotfilesDir"; then
+      # Was unsuccessful in changing directories
+      echo -ne >&2 "${RED}[ERROR]${NS}: Error chaning directories to '$dotfilesDir'\n"
+      return 1
+    else
+      # The CD was successful
+      echo -ne "${GREEN}[DONE]${NS}\n"
+    fi
+
+    # Now that we're in the dotfiles directory,
+    # run git pull to get the latest version.
+    
+    # First double check that we're in the correct directory
+    if [ "$(pwd)" = "$dotfilesDir" ]; then
+      # We are in the correct directory
+      # TODO: Add check to see if we have any uncommit/pushed changes before pulling from 'origin'
+      # Update the files with 'git pull'
+      git pull
+    else
+      # We are not in the correct directory
+      echo -ne >&2 "${RED}[ERROR]${NS}: Error chaning directories to '$dotfilesDir'\n"
+      return 1
+    fi
+  fi
+
+  # Clean up by chaning back to the original directory
+  cd "$originalDir" || return 1
+}
