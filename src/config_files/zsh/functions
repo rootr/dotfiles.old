@@ -97,3 +97,21 @@ get-devices() {
 
   echo "$devicesJSON"
 }
+
+# Function to install homebrew
+install-brew() {
+  # Get the kernel type we're currently on
+  local kernel_type=""
+        kernel_type=$(uname | tr '[:upper:]' '[:lower:]')
+
+  # Check if we're on Linux or macOS
+  if [ "$kernel_type" == "darwin" ]; then
+    # We're currently on a macOS system
+    # Run the homebrew installation script
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    return 0
+  fi
+
+  echo -e "${ORANGE}[WARN]${NS}: ${BOLD}install-brew${NS} installation is not yet support on Linux systems"
+  return 1
+}
