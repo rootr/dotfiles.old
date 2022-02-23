@@ -519,7 +519,7 @@ symlink-files() {
     # Loop through each file in the "$configFilesDir" directory
     for filepath in "$configFilesDir"/*; do
       # Get the base file name
-      filename="$(basename "$filepath")"
+      filename=$(basename "$filepath")
 
       print-verbose "Creating symlink for '$filepath'... "
 
