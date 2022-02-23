@@ -531,12 +531,12 @@ symlink-files() {
       else
         # Error creating symbolic link
         print-verbose "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
-        exit 1
+        return 1
       fi
     done
   else
     print-verbose "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
-    exit 1
+    return 1
   fi
 }
 
@@ -578,14 +578,19 @@ os_name=$(get-os-name)
 
 # Rename the dotfiles root directory
 # and exit if it fails
-rename-dotfiles_dir || exit $?
-
+if ! rename-dotfiles_dir; then
+  echo -e "${RED}[ERROR]${NS}: Error with the 'rename-dotfiles_dir' function"
+  exit 1
+fi
 
 # -------------------- #
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
-
+if ! symlink-files; then
+  echo -e "${RED}[ERROR]${NS}: Error with the 'symlink-files' function"
+  exit 1
+fi
 
 
 # ------------------- #
