@@ -290,7 +290,7 @@ parse-args() {
     done
 
     # Parse short options
-    while getopts ":hv:" options; do
+    while getopts ":hv" options; do
       # Check the different flags
       case $options in
       # Dispaly the usage information
@@ -381,15 +381,15 @@ get-os-name() {
     # We're running on macOS
     echo -ne "macos"
     return 0
-  fi
+  else
+    print-verbose "Checking for os-release file... "
 
-  print-verbose "Checking for os-release file... "
-
-  # Check for the presence of the /etc/os-release file (only on Linux)
-  if [ ! -f /etc/os-release ]; then
-    # The /etc/os-release file does not exist
-    print-verbose "${RED}[ERROR]${NS}: Error locating ${ITALIC}/etc/os-release${NS} file"
-    return 1
+    # Check for the presence of the /etc/os-release file (only on Linux)
+    if [ ! -f /etc/os-release ]; then
+      # The /etc/os-release file does not exist
+      print-verbose "${RED}[ERROR]${NS}: Error locating ${ITALIC}/etc/os-release${NS} file"
+      return 1
+    fi
   fi
 
   # Otherwise, get the Linux distro we're running on (convert it to lowercase)
@@ -491,8 +491,52 @@ rename-dotfiles_dir() {
       print-verbose "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
     fi
   else
-    print-verbose "${RED}[ERROR]${NS}: Error locating the dotfiles root directory\n"
-    return 1
+    print-verbose "${RED}[ERROR]${NS}: Dotfiles directory already renamed\n"
+    return 0
+  fi
+}
+
+# Creates symbolic links to $HOME from $configFilesDir
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: symlink-files
+# @ Return: 0 on success, non-zero on failure
+# -----------------------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+symlink-files() {
+  print-verbose "Checking source directory for config files... "
+
+  # Stores the current filename in the below loop
+  local filename=""
+
+  # Double check that the source directory is valid
+  if [ -d "$configFilesDir" ]; then
+    # "$configFilesDir" is a valid directory
+    print-verbose "${GREEN}[done]${NS}\n"
+
+    # Loop through each file in the "$configFilesDir" directory
+    for filepath in "$configFilesDir"/*; do
+      # Get the base file name
+      filename="$(basename "$filepath")"
+
+      print-verbose "Creating symlink for '$filepath'... "
+
+      # Create a symlink with the current file in the loop
+      # and symlink it to the ~/ directory
+      if ln -s "$filepath" "$HOME/.$filename" >/dev/null 2>&1; then
+        # Error creating symbolic link
+        print-verbose "${GREEN}[done]${NS}\n"
+      else
+        # Error creating symbolic link
+        print-verbose "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
+        exit 1
+      fi
+    done
+  else
+    print-verbose "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
+    exit 1
   fi
 }
 
@@ -541,35 +585,7 @@ rename-dotfiles_dir || exit $?
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
-print-verbose "Checking source directory for config files... "
 
-# Double check that the source directory is valid
-if [ -d "$configFilesDir" ]; then
-  # "$configFilesDir" is a valid directory
-  print-verbose "${GREEN}[done]${NS}\n"
-
-  # Loop through each file in the "$configFilesDir" directory
-  for filepath in "$configFilesDir"/*; do
-    # Get the base file name
-    filename="$(basename "$filepath")"
-
-    print-verbose "Creating symlink for '$filepath'... "
-
-    # Create a symlink with the current file in the loop
-    # and symlink it to the ~/ directory
-    if ln -s "$filepath" "$HOME/.$filename" >/dev/null 2>&1; then
-      # Error creating symbolic link
-      print-verbose "${GREEN}[done]${NS}\n"
-    else
-      # Error creating symbolic link
-      print-verbose "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
-      exit 1
-    fi
-  done
-else
-  print-verbose "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
-  exit 1
-fi
 
 
 # ------------------- #
