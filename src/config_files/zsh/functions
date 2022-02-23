@@ -25,9 +25,15 @@ cd() {
 } # End - cd replacement function
 
 wait_ssh() {
+  # Check that an argument is passed
+  if [ "$#" -eq 0 ]; then
+    # No arguments provided
+    echo -e "${RED}[ERROR]${NS}: Host/IP is a required argument but was not found"
+    exit 1
+  fi
 
   # Host to wait for and then connect to
-  local host='jamf-pro-latest.support.jamf.net'
+  local host="$1"
 
   # Keep track of whether the loop was cancelled or succeeded
   local ping_cancelled=false
@@ -48,4 +54,46 @@ wait_ssh() {
   # Let the user know we're done
   echo "Done pinging, cancelled=$ping_cancelled"
 
+}
+
+# List recent UFW BLOCK logs
+ufw-logs() {
+  # Get the recent log output
+  full_log_output=$(dmesg | tail -30)
+
+  # Filter the output
+  filtered_log_output=$(echo "$full_log_output" | awk '/SPT=/ { if ($8 ~ /10\.0\.0\.[[:digit:]]{1,3}/ && $18 ~ /^DPT/) print substr($8,5) " " substr($9,5) " " substr($17,5) " " substr($18,5) }')
+
+  # Sort the output
+  filter_log_output=$(echo "$filter_log_output" | sort)
+
+  # Headers to display
+  headers="${UNDERLINE}SOURCE_IP DESTINATION_IP SOURCE_PORT DESTINATION_PORT${NS}"
+
+  # Display the filtered output
+  echo -e "$headers\n$filtered_log_output\n$headers" | column -tc4
+}
+
+
+# Lists the directory contents in a readable format
+# using 'exa' and falling back to ls -la --color=always
+list_contents() {
+  # Check if exa is installed
+  if command -v exa >/dev/null 2>&1; then
+    # exa is installed
+    exa -lha "$@"
+
+    return 0
+  fi
+
+  # Otherwise, fallback to using the ls command
+  ls -la --color=always "$@"
+
+  return 0
+}
+
+get-devices() {
+  devicesJSON=$(curl -ks "http://10.0.0.145:49090/1/devices?auth=17E22BFD1D3")
+
+  echo "$devicesJSON"
 }

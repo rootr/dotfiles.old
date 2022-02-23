@@ -55,6 +55,9 @@ export EDITOR="/usr/bin/nano"
 # Default PATH (Arch Linux)
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin"
 
+# Additional defaults for macOS
+export PATH="$PATH:/usr/sbin:/sbin"
+
 # Perl bin paths
 export PATH="$PATH:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl"
 
@@ -64,7 +67,7 @@ export PATH="$PATH:/usr/local/mysql/bin"
 # git
 export PATH="$PATH:/usr/local/git/bin:/sw/bin"
 
-# Python
+# Python (macOS)
 export PATH="$PATH:$HOME/Library/Python/3.8/bin"
 
 # Global Composer PATH
