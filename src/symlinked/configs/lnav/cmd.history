@@ -1,0 +1,31 @@
+filter-out There was a problem determining membership of device
+toggle-filtering
+filter-out Http2ApnsService
+filter-out SmartSearchCalculator
+toggle-filtering
+reset-session
+filter-out Push failed
+reset-session
+filter-out Push failed for the unmanaged device
+filter-out There was a problem determining membership of device
+filter-out 32DF2362-51C4-593E-A9A5-B9539560F607
+reset-session
+filter-out │
+filter-out 32DF2362-51C4-593E-A9A5-B9539560F607
+filter-out EBD93A02-3A7E-5067-8B67-6A009811A751
+filter-out ACC92318-8C87-5328-AC7C-4099DADFD314
+filter-out 0617E875-02C9-5C1F-8614-C5F96C39B7B0
+filter-out A51BD67A-F56A-5B43-BDE8-84B6303D8FF9
+filter-out CE52324B-AB49-5AD7-A8E0-A39EB20EC7A8
+filter-out F22A9DDF-55CB-5F5D-A790-83C5F9DC11E7
+filter-out FB8374B6-710B-555A-920C-2DEC6775A4CB
+filter-out EE481B99-284B-5D35-834A-B0D751497E81
+filter-out F4041879-A586-50C8-AE6C-65729156360A
+filter-out 037D7AAE-FEB5-58A1-AFFA-C6A6B52931B2
+filter-out Push failed for the unmanaged device
+filter-out Comm Device null. remoteip:
+filter-out Error loading configuration profiles for device.
+reset-session
+filter-out [apns] Sending push notification failed
+reset-session
+filter-out "DeviceEnrollmentProgramException"
