@@ -106,14 +106,25 @@ install-brew() {
 
   # Check if we're on Linux or macOS
   if [ "$kernel_type" = "darwin" ]; then
-  echo "Starting brew installation"
-  echo "Enter password (if prompted) to continue"
     # We're currently on a macOS system
+    echo "Starting brew installation"
+    echo -e "Enter password (if prompted) to continue\n"
+    
     # Run the homebrew installation script
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    return 0
-  fi
+    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+      # The homebrew install was successful
+      echo -e "${GREEN}[SUCCESS]${NS}: Homebrew is successfully installed"
+      return 0
+    else
+      echo -e "${RED}[FAILED]${NS}: There was an error in the Homebrew installation"
+      return 1
+    fi
+  else
+    # We're currently on a Linux system
+    # https://docs.brew.sh/Homebrew-on-Linux
 
-  echo -e "${ORANGE}[WARN]${NS}: ${BOLD}install-brew${NS} installation is not yet support on Linux systems"
-  return 1
+    # Start the brew installation on Linux
+    echo -e "${ORANGE}[WARN]${NS}: ${BOLD}install-brew${NS} installation is not yet support on Linux systems"
+    return 1
+  fi
 }
