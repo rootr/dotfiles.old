@@ -1,0 +1,32 @@
+[2022-02-19 02:28:53.993] [main] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-19 02:28:54.373] [main] [info] update#setState idle
+[2022-02-19 02:28:54.594] [main] [info] ExtensionHostStarterWorker created
+[2022-02-19 02:28:58.574] [main] [info] Starting extension host with pid 1943 (fork() took 26 ms).
+[2022-02-19 02:28:58.575] [main] [info] ExtensionHostStarterWorker.start() took 37 ms.
+[2022-02-19 02:29:00.686] [main] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-19 02:29:00.816] [main] [warning] Switching to using in-memory credential store instead because Keytar failed to load: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.secrets was not provided by any .service files
+[2022-02-19 02:29:24.378] [main] [info] update#setState checking for updates
+[2022-02-19 02:29:24.461] [main] [info] update#setState idle
+[2022-02-19 03:29:24.484] [main] [info] update#setState checking for updates
+[2022-02-19 03:29:24.959] [main] [info] update#setState idle
+[2022-02-19 04:29:24.510] [main] [info] update#setState checking for updates
+[2022-02-19 04:29:24.955] [main] [info] update#setState idle
+[2022-02-19 05:29:24.616] [main] [info] update#setState checking for updates
+[2022-02-19 05:29:25.371] [main] [info] update#setState idle
+[2022-02-19 06:29:24.686] [main] [info] update#setState checking for updates
+[2022-02-19 06:29:25.098] [main] [info] update#setState idle
+[2022-02-19 07:29:24.798] [main] [info] update#setState checking for updates
+[2022-02-19 07:29:25.186] [main] [info] update#setState idle
+[2022-02-19 08:29:24.873] [main] [info] update#setState checking for updates
+[2022-02-19 08:29:25.267] [main] [info] update#setState idle
+[2022-02-19 09:29:24.925] [main] [info] update#setState checking for updates
+[2022-02-19 09:29:25.356] [main] [info] update#setState idle
+[2022-02-19 10:29:25.033] [main] [info] update#setState checking for updates
+[2022-02-19 10:29:25.418] [main] [info] update#setState idle
+[2022-02-19 11:29:25.140] [main] [info] update#setState checking for updates
+[2022-02-19 11:29:25.235] [main] [error] Error: net::ERR_NAME_NOT_RESOLVED
+    at SimpleURLLoaderWrapper.<anonymous> (electron/js2c/browser_init.js:109:7068)
+    at SimpleURLLoaderWrapper.emit (events.js:315:20)
+[2022-02-19 11:29:25.235] [main] [info] update#setState idle
+[2022-02-19 12:29:25.177] [main] [info] update#setState checking for updates
+[2022-02-19 12:29:25.660] [main] [info] update#setState idle

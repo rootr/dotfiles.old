@@ -1,0 +1,5 @@
+[2022-02-19 14:35:25.046] [renderer1] [info] IExtensionHostStarter.start() took 319 ms.
+[2022-02-19 14:35:26.910] [renderer1] [error] [Extension Host] (node:2279) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `code --trace-deprecation ...` to show where the warning was created)
+[2022-02-19 14:35:31.105] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-19 14:35:32.239] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User/snippets, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User/snippets)

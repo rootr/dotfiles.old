@@ -1,0 +1,17 @@
+[2022-02-21 16:37:21.461] [exthost] [info] Extension host with pid 1460 started
+[2022-02-21 16:37:21.462] [exthost] [info] Skipping acquiring lock for /home/rootr/.config/Code/User/workspaceStorage/e6b9825bc74367897aa80b372888ed7a.
+[2022-02-21 16:37:21.821] [exthost] [info] ExtensionService#_doActivateExtension vscode.microsoft-authentication, startup: false, activationEvent: 'onAuthenticationRequest:microsoft'
+[2022-02-21 16:37:21.955] [exthost] [info] ExtensionService#_doActivateExtension vscode.debug-auto-launch, startup: true, activationEvent: '*'
+[2022-02-21 16:37:21.970] [exthost] [info] ExtensionService#_doActivateExtension vscode.git-base, startup: true, activationEvent: '*', root cause: vscode.github
+[2022-02-21 16:37:22.198] [exthost] [info] ExtensionService#_doActivateExtension vscode.git, startup: true, activationEvent: '*'
+[2022-02-21 16:37:22.359] [exthost] [info] ExtensionService#_doActivateExtension vscode.github, startup: true, activationEvent: '*'
+[2022-02-21 16:37:22.614] [exthost] [info] Eager extensions activated
+[2022-02-21 16:37:22.981] [exthost] [info] ExtensionService#_doActivateExtension vscode.emmet, startup: false, activationEvent: 'onStartupFinished'
+[2022-02-21 16:37:23.055] [exthost] [info] ExtensionService#_doActivateExtension vscode.merge-conflict, startup: false, activationEvent: 'onStartupFinished'
+[2022-02-21 16:37:23.070] [exthost] [info] ExtensionService#_doActivateExtension vscode.github-authentication, startup: false, activationEvent: 'onAuthenticationRequest:github'
+[2022-02-21 16:37:24.036] [exthost] [warning] [Decorations] CAPPING events from decorations provider vscode.git 319
+[2022-02-21 16:37:29.170] [exthost] [warning] [Decorations] CAPPING events from decorations provider vscode.git 320
+[2022-02-21 16:37:38.286] [exthost] [warning] [Decorations] CAPPING events from decorations provider vscode.git 320
+[2022-02-21 16:37:49.903] [exthost] [warning] [Decorations] CAPPING events from decorations provider vscode.git 320
+[2022-02-21 16:37:50.564] [exthost] [info] extension host terminating: renderer closed the socket
+[2022-02-21 16:37:50.578] [exthost] [info] Extension host with pid 1460 exiting with code 0

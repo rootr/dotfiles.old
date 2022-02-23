@@ -1,0 +1,20 @@
+[2022-02-21 09:34:31.103] [main] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-21 09:34:31.577] [main] [info] update#setState idle
+[2022-02-21 09:34:31.797] [main] [info] ExtensionHostStarterWorker created
+[2022-02-21 09:34:37.397] [main] [info] Starting extension host with pid 4652 (fork() took 61 ms).
+[2022-02-21 09:34:37.406] [main] [info] ExtensionHostStarterWorker.start() took 76 ms.
+[2022-02-21 09:34:37.953] [main] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-21 09:34:38.948] [main] [warning] Switching to using in-memory credential store instead because Keytar failed to load: GDBus.Error:org.freedesktop.DBus.Error.ServiceUnknown: The name org.freedesktop.secrets was not provided by any .service files
+[2022-02-21 09:35:01.586] [main] [info] update#setState checking for updates
+[2022-02-21 09:35:01.673] [main] [info] update#setState idle
+[2022-02-21 10:11:19.842] [main] [info] Extension host with pid 4652 exited with code: 0, signal: null.
+[2022-02-21 10:11:24.507] [main] [info] Starting extension host with pid 6868 (fork() took 125 ms).
+[2022-02-21 10:11:24.509] [main] [info] ExtensionHostStarterWorker.start() took 131 ms.
+[2022-02-21 10:31:35.199] [main] [info] Enabling inspect port on extension host with pid 6868.
+[2022-02-21 10:32:06.357] [main] [info] Enabling inspect port on extension host with pid 6868.
+[2022-02-21 10:33:29.303] [main] [info] Enabling inspect port on extension host with pid 6868.
+[2022-02-21 10:33:29.470] [main] [info] Enabling inspect port on extension host with pid 6868.
+[2022-02-21 10:35:02.099] [main] [info] update#setState checking for updates
+[2022-02-21 10:35:05.454] [main] [info] update#setState idle
+[2022-02-21 11:02:46.276] [main] [error] CodeWindow: detected unresponsive
+[2022-02-21 11:14:04.492] [main] [info] Extension host with pid 6868 exited with code: 0, signal: null.

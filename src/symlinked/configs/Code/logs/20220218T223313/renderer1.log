@@ -1,0 +1,6 @@
+[2022-02-18 22:33:21.869] [renderer1] [info] IExtensionHostStarter.start() took 694 ms.
+[2022-02-18 22:33:24.620] [renderer1] [error] [Extension Host] (node:8194) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `code --trace-deprecation ...` to show where the warning was created)
+[2022-02-18 22:33:29.240] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-18 22:33:29.246] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User/snippets, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User/snippets)
+[2022-02-18 22:37:34.785] [renderer1] [error] [text file model] handleSaveError(517) - exit - resulted in a save error: Error: Unable to write file '/usr/local/bin/lock_and_blur.sh' (NoPermissions (FileSystemError): Error: EACCES: permission denied, open '/usr/local/bin/lock_and_blur.sh') file:///usr/local/bin/lock_and_blur.sh

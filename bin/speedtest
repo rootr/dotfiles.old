@@ -1,0 +1,247 @@
+#!/bin/bash
+# ==========================================
+# ---------| INTERNET SPEEDTEST |-----------
+# ------------------------------------------
+# Script that runs a speed test locally and
+# logs the results to a log file with the
+# date and all the details
+# ------------------------------------------
+# Usage: speedtest [-h | --help] [-l <FILE_PATH> | --log <FILE_PATH>]
+#
+# Perform an internet speedtest and log the output to the log file
+#
+# Options:
+#  -h, --help  Display this usage help
+#  -d, --debug Enable debug mode and output more verbosely
+#
+#  -l, --log <FILE_PATH>  Path to the log file to use     [DEFAULT]: /var/log/speedtest.log
+# ----------------------------------------------------------------------------
+# Copyright 2022 Martin Cox
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions: The
+# above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+# IN THE SOFTWARE.
+# ----------------------------------------------------------------------------
+
+# --------------------------- #
+# -|       VARIABLES       |- #
+# --------------------------- #
+
+# Wether or not debug mode is enabled
+# Setting this to "true" will produce more verbose output
+# Can also be enabled with the -d|--debug flag
+# ------------------------------------------------
+# Usage: ssh-add-host -d|--debug
+# ------------------------------------------------
+# Available options to enable: "on", "enabled", "true"
+# ------------------------------------------------
+_DEBUG="true"
+
+# PID of the show_spinner function
+# Used to stop/kill the spinner when the test is complete
+_SPIN_PID=""
+
+# --------------------------- #
+# -|    COLOR VARIABLES    |- #
+# --------------------------- #
+
+NOSTYLE='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+
+BOLD='\033[1m'
+DIM='\033[2m'
+ITALIC='\033[3m'
+
+# --------------------------- #
+# -|    DEFAULT OPTIONS    |- #
+# --------------------------- #
+
+# Path to log file to output speedtest results to
+# ------------------------------------------------
+# Usage: speedtest -l|--log PATH/TO/CONFIG
+# ------------------------------------------------
+logfile="/var/log/speedtest.log"
+
+# --------------------------- #
+# -|       FUNCTIONS       |- #
+# --------------------------- #
+
+# Fucntion to run when in debug mode
+# will not proceed with the command if not in DEBUG mode
+IN_DEBUG() {
+
+  # Check if we're in DEBUG mode
+  if [ "$_DEBUG" == "on" ]; then
+
+    # Since DEBUG mode is enabled, run the argument
+    "$@"
+
+  fi
+
+}
+
+# Function to print the usage information
+usage() {
+
+  echo -e "
+  Usage: ${BOLD}speedtest${NOSTYLE} [${BOLD}-h${NOSTYLE} | ${BOLD}--help${NOSTYLE}] [${BOLD}-d${NOSTYLE} | ${BOLD}--debug${NOSTYLE}] [${BOLD}-l${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE} | ${BOLD}--log${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}]
+
+  Perform an internet speedtest and log the output to the log file
+
+  ${DIM}Options:${NOSTYLE}
+    ${BOLD}-h${NOSTYLE}, ${BOLD}--help${NOSTYLE}  Display this usage help
+    ${BOLD}-d${NOSTYLE}, ${BOLD}--debug${NOSTYLE} Enable debug mode and output more verbosely
+
+    ${BOLD}-l${NOSTYLE}, ${BOLD}--log${NOSTYLE} ${ITALIC}<FILE_PATH>${NOSTYLE}  Log file to output results to     ${CYAN}[DEFAULT]${NOSTYLE}: $logfile"
+
+}
+
+spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=$1
+
+  # Characters to animate for the spinner
+  local spinner=$2
+
+  # Number of animation frames to use
+  local total_frames=$((${#spinner} - 1))
+
+  # Animate the spinner indefinitely (until killed)
+  while :; do
+
+    # Loop through each character in the spinner
+    for i in $(seq 0 $total_frames); do
+
+      # Print the spinner frame
+      echo -n " [${spinner:$i:1}]"
+
+      # Clear previous for next animation frame
+      echo -ne "\b\b\b\b"
+
+      # Wait $framerate for the next frame
+      sleep "$framerate"
+
+    done
+
+  done
+
+}
+
+# Function to show a spinner while something is loading
+# shellcheck disable=SC2120
+show_spinner() {
+
+  # Duration between each frame of the animation
+  local framerate=${1:-0.2}
+
+  # Characters to animate for the spinner
+  local spinner=${2:-"/|\\-/|\\-"}
+
+  # Start showing the spinner animation
+  spinner "$framerate" "$spinner" &
+
+  # Update the $_SPIN_PID global variable
+  _SPIN_PID=$!
+
+  # Kill the spinner on any signal, including our own exit
+  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+
+}
+
+# Function to kill the spinner on demand
+stop_spinner() {
+
+  # TODO: Prevent this extra error line from sometimes showing after the hosts
+  # --> "/Users/USERNAME/.dotfiles/bin/ssh-list-hosts: line 391: kill: (14824) - No such process"
+
+  # Check if the _SPIN_PID process is still running or not
+  if ! kill "$_SPIN_PID" >/dev/null 2>&1; then
+
+    # Unable to kill the process
+    # possiblly due to it not existing
+    IN_DEBUG echo -e "${RED}[ERROR]${NOSTYLE}: There was an error killing the spinner process: $?"
+
+  fi
+
+}
+
+# --------------------------- #
+# -|    ARGUMENT PARSING   |- #
+# --------------------------- #
+
+# Check if there are any arguments provided
+if [ $# -ne 0 ]; then
+
+  # There are arguments provided
+  # Transform long options to short ones
+  for arg in "$@"; do
+
+    shift
+
+    case "$arg" in
+
+    "--log") set -- "$@" "-l" ;;
+    "--help") set -- "$@" "-h" ;;
+    "--debug") set -- "$@" "-d" ;;
+    *) set -- "$@" "$arg" ;;
+
+    esac
+
+  done
+
+  # Parse short options
+  OPTIND=1
+  while getopts ":c:hdt" opt; do
+
+    case "$opt" in
+    "l") config_file="$OPTARG" ;;
+    "d") _DEBUG="true" ;;
+    "h")
+      usage
+      exit 0
+      ;;
+    # Unrecognized option
+    \?)
+
+      # Let them know we have an unrecognized option
+      echo -e "${FUNCNAME[0]}: ${RED}$error_unrecgonized_option${NOCOLOR} --> $OPTARG\n"
+
+      # Print the usage information
+      usage
+      exit 1
+      ;;
+    :)
+
+      # Signal that one of the options requires an argument and is missing it
+      echo -e "${RED}[ERROR]:${NOCOLOR} Option -$OPTARG requires a argument/value" >&2
+
+      usage
+
+      exit 1
+      ;;
+    esac
+
+  done
+
+fi
+
+# Remove options from positional parameters
+shift "$((OPTIND - 1))"

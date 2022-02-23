@@ -1,0 +1,13 @@
+! Set the display scaling for HiDPI displays
+Xft.dpi: 120
+
+! Set the colors for XTerm
+XTerm*background: rgb:240/240/240
+XTerm*foreground: lightgray
+
+! Set the font and font size for XTerm
+XTerm*faceName: dejavu:pixelsize=18
+
+! Key mapping for the 'DEL' key (at least for the Apple Magic Keyboard - Wireless)
+XTerm*vt100.backarrowkey: false
+XTerm*ttyModes: erase ^?

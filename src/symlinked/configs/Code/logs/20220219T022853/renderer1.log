@@ -1,0 +1,11 @@
+[2022-02-19 02:28:58.618] [renderer1] [info] IExtensionHostStarter.start() took 79 ms.
+[2022-02-19 02:29:01.049] [renderer1] [error] [Extension Host] (node:1943) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `code --trace-deprecation ...` to show where the warning was created)
+[2022-02-19 02:29:04.650] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.xinitrc, real: /home/rootr/.dotfiles/src/symlinked/xinitrc)
+[2022-02-19 02:29:04.662] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User)
+[2022-02-19 02:29:04.674] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.config/Code/User/snippets, real: /home/rootr/.dotfiles/src/symlinked/configs/Code/User/snippets)
+[2022-02-19 02:30:04.774] [renderer1] [warning] Webgl could not be loaded. Falling back to the canvas renderer type. {}
+[2022-02-19 02:30:08.959] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.xinitrc, real: /home/rootr/.dotfiles/src/symlinked/xinitrc)
+[2022-02-19 02:30:16.525] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.xinitrc, real: /home/rootr/.dotfiles/src/symlinked/xinitrc)
+[2022-02-19 02:30:28.296] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.xinitrc, real: /home/rootr/.dotfiles/src/symlinked/xinitrc)
+[2022-02-19 12:39:11.545] [renderer1] [warning] [File Watcher (node.js)] correcting a path to watch that seems to be a symbolic link or wrong casing (original: /home/rootr/.xinitrc, real: /home/rootr/.dotfiles/src/symlinked/xinitrc)

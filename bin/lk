@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Set the icon and a temporary location for the screenshot to be stored
+icon="$HOME/images/lock-icon-light.png"
+tmpbg='/tmp/screen.png'
+
+# Take a screenshot to use as the background
+scrot "$tmpbg"
+
+# Blue the screenshot by resizing and scaling it back up
+convert "$tmpbg" -filter Gaussian -thumbnail 20% -sample 500% "$tmpbg"
+
+# Overlay the lock icon onto the screenshot
+convert "$tmpbg" "$icon" -gravity center -composite "$tmpbg"
+
+# Lock the screen with the blurred screenshot
+i3lock -i "$tmpbg"
