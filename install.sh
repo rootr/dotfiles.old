@@ -1,16 +1,20 @@
 #!/bin/bash
 # Installs the required dependencies and symlinks the config files
 # VERSION: 0.1.2
-# ---------------------------------------------------------------------------------------- #
-# Usage: 0]} [-h | --help] [-d | --debug] [-f <FILE_PATH> | --file <FILE_PATH>]
-#
-#   Parse through Jamf log file
-#
-#   Options:
-#     -h, --help              Display this usage help
-#
-#     -f, --file <FILE_PATH>  Config file to list hosts from     [DEFAULT]: '$log_path"
-# ---------------------------------------------------------------------------------------- #
+# +---------------------------------------------------------------------------------------------------------------
+# |Usage: bash install.sh [-h | --help] [-v | --verbose]
+# |
+# |  Install the required dependencies and symlink the appropriate files for .dotfiles
+# |  This performs the following actions:
+# |  - Backup existing dotfiles in ~/ to ~/.dotfiles_backup/
+# |  - Check for required dependencies
+# |  - Install required dependencies
+# |  - Symlink config files from ~/.dotfiles/src/symlinked/
+# |
+# |  Options:
+# |    -h, --help              Display this usage help
+# |    -s, --silent             Run script without printing anything to stdout"
+# +---------------------------------------------------------------------------------------------------------------
 # Copyright 2022 Martin Cox
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
