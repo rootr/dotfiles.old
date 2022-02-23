@@ -43,7 +43,7 @@ wait_ssh() {
   until ping -c1 -w1 "$host" >/dev/null 2>&1; do :; done &
 
   # Add a trap to trap the process
-  trap "kill $!; $ping_cancelled=true" SIGINT
+  trap 'kill $!; $ping_cancelled=true' SIGINT
 
   # Wait for the loop to exit
   wait $!
@@ -106,6 +106,7 @@ install-brew() {
 
   # Check if we're on Linux or macOS
   if [ "$kernel_type" == "darwin" ]; then
+  echo "Starting brew installation... "
     # We're currently on a macOS system
     # Run the homebrew installation script
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
