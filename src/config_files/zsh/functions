@@ -144,7 +144,7 @@ update-dotfiles() {
     # CD into the dotfiles directory
     echo -n "Changing to dotfiles directory... "
     
-    if ! cd "$dotfilesDir"; then
+    if ! builtin cd "$dotfilesDir"; then
       # Was unsuccessful in changing directories
       echo -ne >&2 "${RED}[ERROR]${NS}: Error chaning directories to '$dotfilesDir'\n"
       return 1
@@ -170,5 +170,5 @@ update-dotfiles() {
   fi
 
   # Clean up by chaning back to the original directory
-  cd "$originalDir" || return 1
+  builtin cd "$originalDir" || return 1
 }
