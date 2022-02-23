@@ -105,8 +105,9 @@ install-brew() {
         kernel_type=$(uname | tr '[:upper:]' '[:lower:]')
 
   # Check if we're on Linux or macOS
-  if [ "$kernel_type" == "darwin" ]; then
-  echo "Starting brew installation... "
+  if [ "$kernel_type" = "darwin" ]; then
+  echo "Starting brew installation"
+  echo "Enter password (if prompted) to continue"
     # We're currently on a macOS system
     # Run the homebrew installation script
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
