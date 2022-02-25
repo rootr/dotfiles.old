@@ -70,30 +70,16 @@ subcommand_show() {
 # Function to kill the spinner on demand
 # Requires that the _SPIN_PID be passed as an argument
 subcommand_stop() {
+  # Capture the spinner PID (if still running)
+  local _SPIN_PID=$(ps aux | grep 'dotfiles/bin/spinner show' | awk '{print $2}')
 
-  # Check if we were passed an argument or not
-  if [ -z "$1" ]; then
-    # We were not passed an argument
-    echo >&2 -e "\n\n${RED}Missing Spinner PID in arguments${NOSTYLE}\n\n"
-    exit 1
+  # Kill the spinner, and exit on failure
+  if ! kill "$(head -1 <<<$_SPIN_PID)"; then
+    echo -e "${RED}[ERROR]${NS}: There was an error killing the spinner process(es)."
+    echo "PID: $_SPIN_PID"
+    return 1
   fi
-
-  # Check to make sure the Spinner PID is a valid process ID
-  if ! ps -p "$1" >/dev/null 2>&1; then
-    # Process is not valid or not found
-    echo >&2 -e "${RED}[ERROR]${NOSTYLE}: Spinner PID not valid or not found"
-    exit 1
-  fi
-
-  # Check if the _SPIN_PID process is still running or not
-  if ! kill "$1" >/dev/null 2>&1; then
-
-    # Unable to kill the process
-    # possiblly due to it not existing
-    echo -e "${RED}[ERROR]${NOSTYLE}: There was an error killing the spinner process: $?"
-
-  fi
-
+  return 0
 }
 
 # Get the specified subcommand
