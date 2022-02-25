@@ -43,6 +43,7 @@ _SPIN_PID=""
 NS='\033[0m'
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+ORANGE='\033[0;33m'
 BOLD='\033[1m'
 ITALIC='\033[3m'
 
@@ -74,7 +75,7 @@ usage() {
 
   ${DIM}Options:${NS}
     ${BOLD}-h${NS}, ${BOLD}--help${NS}              Display this usage help
-    ${BOLD}-v${NS}, ${BOLD}--verbose${NS}           Print messages verbosely, showing more info"
+    ${BOLD}-s${NS}, ${BOLD}--silent${NS}             Run script without printing anything to stdout"
 }
 
 # A function to generate and animate a spinning loading icon
@@ -204,23 +205,23 @@ _try-again() {
 # Function to print messages if we're in verbose mode
 # -------------------------------------------
 # @ Arguments: [STRING] --> Message to print
-# @ Usage: print-verbose "Message to print"
+# @ Usage: print-msg "Message to print"
 # @ Return: Prints message (no return)
 # -------------------------------------------
 # @ Global Variables: NONE
 # -------------------------------------------
-print-verbose() {
+print-msg() {
   # Message to print
   local msg="$1"
 
   # Double check that the $msg argument was provided
   if [ -z "$msg" ]; then
     # An argumetn was not provided
-    print-verbose "${RED}[ERROR]${NS}: ${FUNCNAME[0]} - 'Message' argument is required but was not found"
+    print-msg "${RED}[ERROR]${NS}: ${FUNCNAME[0]} - 'Message' argument is required but was not found"
   fi
 
   # Only print if we're in 'verbose mode'
-  [ "$verbose_mode" == "enabled" ] && echo -ne "$msg"
+  [ "$silent_mode" == "disabled" ] && echo -ne "$msg"
 }
 
 # ---------------- #
@@ -254,7 +255,7 @@ os_name=""
 declare -a pkgs_to_install=()
 
 # Whether or not we're running in verbose mode
-verbose_mode="disabled"
+silent_mode="enabled"
 
 # Directory containing the config files we're going to
 # be symbolic linking to the ~/ directory
@@ -271,7 +272,7 @@ configFilesDir="$HOME/.dotfiles/src/symlinked"
 # @ Return: Only modifies variables (no return)
 # -------------------------------------------
 # @ Global Variables:
-# --> $verbose_mode
+# --> $silent_mode
 # -------------------------------------------
 parse-args() {
   # Check if there are any arguments provided
@@ -284,13 +285,13 @@ parse-args() {
 
       case "$arg" in
         "--help") set -- "$@" "-h" ;;
-        "--verbose") set -- "$@" "-v" ;;
+        "--quiet") set -- "$@" "-q" ;;
         *) set -- "$@" "$arg" ;;
       esac
     done
 
     # Parse short options
-    while getopts ":hv:" options; do
+    while getopts ":hs" options; do
       # Check the different flags
       case $options in
       # Dispaly the usage information
@@ -298,7 +299,7 @@ parse-args() {
         usage
         return 0
         ;;
-      "v") verbose_mode="enabled" ;;
+      "s") silent_mode="enabled" ;;
       # Unrecognized option
       \?)
         # Let them know we have an unrecognized option
@@ -343,7 +344,7 @@ is-installed() {
     return 1
   fi
 
-  print-verbose "Checking for presence of '$1'... "
+  print-msg "Checking for presence of '$1'... "
 
   # Allow time to read the message
   sleep 0.5
@@ -352,12 +353,12 @@ is-installed() {
   if ! command -v "$1" > /dev/null; then
     # Command is not found on the system
 
-    print-verbose "${RED}[ERROR]${NS}: '$1' command not found\n"
+    print-msg "${RED}[ERROR]${NS}: '$1' command not found\n"
 
     return 1
   fi
 
-  print-verbose "${GREEN}[DONE]${NS}: '$1' command installed\n"
+  print-msg "${GREEN}[DONE]${NS}: '$1' command installed\n"
 
   return 0
 }
@@ -381,15 +382,15 @@ get-os-name() {
     # We're running on macOS
     echo -ne "macos"
     return 0
-  fi
+  else
+    print-msg "Checking for os-release file... "
 
-  print-verbose "Checking for os-release file... "
-
-  # Check for the presence of the /etc/os-release file (only on Linux)
-  if [ ! -f /etc/os-release ]; then
-    # The /etc/os-release file does not exist
-    print-verbose "${RED}[ERROR]${NS}: Error locating ${ITALIC}/etc/os-release${NS} file"
-    return 1
+    # Check for the presence of the /etc/os-release file (only on Linux)
+    if [ ! -f /etc/os-release ]; then
+      # The /etc/os-release file does not exist
+      print-msg "${RED}[ERROR]${NS}: Error locating ${ITALIC}/etc/os-release${NS} file"
+      return 1
+    fi
   fi
 
   # Otherwise, get the Linux distro we're running on (convert it to lowercase)
@@ -479,19 +480,63 @@ rename-dotfiles_dir() {
   # Check to see if the directory is already renamed
   if [ ! -d "$HOME/.dotfiles" ]; then
     # The root directory is not yet renamed to be hidden
-    print-verbose "Renaming root dotfiles directory... "
+    print-msg "Renaming root dotfiles directory... "
 
     # Rename the root directory to make it hidden
     # and catch any errors if the command fails
     if ! mv "$HOME/dotfiles" "$HOME/.dotfiles" >/dev/null 2>&1; then
       # There was an error with the rename operation
-      print-verbose "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory\n"
+      print-msg "${RED}[ERROR]${NS}: There was an error renaming the dotfiles directory\n"
       return 1
     else
-      print-verbose "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
+      print-msg "${GREEN}[DONE]${NS}: Successfully renamed dotfiles\n"
     fi
   else
-    print-verbose "${RED}[ERROR]${NS}: Error locating the dotfiles root directory\n"
+    print-msg "${ORANGE}[WARN]${NS}: Dotfiles directory already renamed\n"
+    return 0
+  fi
+}
+
+# Creates symbolic links to $HOME from $configFilesDir
+# -----------------------------------------------------------
+# @ Arguments: NONE
+# -----------------------------------------------------------
+# @ Usage: symlink-files
+# @ Return: 0 on success, non-zero on failure
+# -----------------------------------------------------------
+# @ Global Variables: NONE
+# -----------------------------------------------------------
+symlink-files() {
+  print-msg "Checking source directory for config files... "
+
+  # Stores the current filename in the below loop
+  local filename=""
+
+  # Double check that the source directory is valid
+  if [ -d "$configFilesDir" ]; then
+    # "$configFilesDir" is a valid directory
+    print-msg "${GREEN}[done]${NS}\n"
+
+    # Loop through each file in the "$configFilesDir" directory
+    for filepath in "$configFilesDir"/*; do
+      # Get the base file name
+      filename=$(basename "$filepath")
+
+      print-msg "Creating symlink for '$filepath'... "
+
+      # Create a symlink with the current file in the loop
+      # and symlink it to the ~/ directory
+      if ln -s "$filepath" "$HOME/.$filename" >/dev/null 2>&1; then
+        # Error creating symbolic link
+        print-msg "${GREEN}[done]${NS}\n"
+      else
+        # Error creating symbolic link
+        print-msg "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
+        return 1
+      fi
+    done
+  else
+    print-msg "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
     return 1
   fi
 }
@@ -534,40 +579,17 @@ os_name=$(get-os-name)
 
 # Rename the dotfiles root directory
 # and exit if it fails
-rename-dotfiles_dir || exit $?
-
+if ! rename-dotfiles_dir; then
+  echo -e "${RED}[ERROR]${NS}: Error with the 'rename-dotfiles_dir' function"
+  exit 1
+fi
 
 # -------------------- #
 # SYMLINK CONFIG FILES #
 # -------------------- #
 
-print-verbose "Checking source directory for config files... "
-
-# Double check that the source directory is valid
-if [ -d "$configFilesDir" ]; then
-  # "$configFilesDir" is a valid directory
-  print-verbose "${GREEN}[done]${NS}\n"
-
-  # Loop through each file in the "$configFilesDir" directory
-  for filepath in "$configFilesDir"/*; do
-    # Get the base file name
-    filename="$(basename "$filepath")"
-
-    print-verbose "Creating symlink for '$filepath'... "
-
-    # Create a symlink with the current file in the loop
-    # and symlink it to the ~/ directory
-    if ln -s "$filepath" "$HOME/.$filename" >/dev/null 2>&1; then
-      # Error creating symbolic link
-      print-verbose "${GREEN}[done]${NS}\n"
-    else
-      # Error creating symbolic link
-      print-verbose "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
-      exit 1
-    fi
-  done
-else
-  print-verbose "${RED}[error]${NS}: Not a valid directory, evaluating: '$configFilesDir'\n"
+if ! symlink-files; then
+  echo -e "${RED}[ERROR]${NS}: Error with the 'symlink-files' function"
   exit 1
 fi
 

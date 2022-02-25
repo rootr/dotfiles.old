@@ -43,7 +43,7 @@ wait_ssh() {
   until ping -c1 -w1 "$host" >/dev/null 2>&1; do :; done &
 
   # Add a trap to trap the process
-  trap "kill $!; $ping_cancelled=true" SIGINT
+  trap 'kill $!; $ping_cancelled=true' SIGINT
 
   # Wait for the loop to exit
   wait $!
@@ -96,4 +96,79 @@ get-devices() {
   devicesJSON=$(curl -ks "http://10.0.0.145:49090/1/devices?auth=17E22BFD1D3")
 
   echo "$devicesJSON"
+}
+
+# Function to install homebrew
+install-brew() {
+  # Get the kernel type we're currently on
+  local kernel_type=""
+        kernel_type=$(uname | tr '[:upper:]' '[:lower:]')
+
+  # Check if we're on Linux or macOS
+  if [ "$kernel_type" = "darwin" ]; then
+    # We're currently on a macOS system
+    echo "Starting brew installation"
+    echo -e "Enter password (if prompted) to continue\n"
+    
+    # Run the homebrew installation script
+    if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+      # The homebrew install was successful
+      echo -e "${GREEN}[SUCCESS]${NS}: Homebrew is successfully installed"
+      return 0
+    else
+      echo -e "${RED}[FAILED]${NS}: There was an error in the Homebrew installation"
+      return 1
+    fi
+  else
+    # We're currently on a Linux system
+    # https://docs.brew.sh/Homebrew-on-Linux
+
+    # Start the brew installation on Linux
+    echo -e "${ORANGE}[WARN]${NS}: ${BOLD}install-brew${NS} installation is not yet support on Linux systems"
+    return 1
+  fi
+}
+
+# Function to pull the latest version of the dotfiles git
+update-dotfiles() {
+  # Get the current directory we're in
+  originalDir=$(pwd)
+
+  # Path to the dotfiles directory
+  dotfilesDir="$HOME/.dotfiles"
+
+  # CD to the dotfiles directory
+  # After checking that it exists
+  if [ -d "$dotfilesDir" ]; then
+    # The directory does indeed exist
+    # CD into the dotfiles directory
+    echo -n "Changing to dotfiles directory... "
+    
+    if ! builtin cd "$dotfilesDir"; then
+      # Was unsuccessful in changing directories
+      echo -ne >&2 "${RED}[ERROR]${NS}: Error chaning directories to '$dotfilesDir'\n"
+      return 1
+    else
+      # The CD was successful
+      echo -ne "${GREEN}[DONE]${NS}\n"
+    fi
+
+    # Now that we're in the dotfiles directory,
+    # run git pull to get the latest version.
+    
+    # First double check that we're in the correct directory
+    if [ "$(pwd)" = "$dotfilesDir" ]; then
+      # We are in the correct directory
+      # TODO: Add check to see if we have any uncommit/pushed changes before pulling from 'origin'
+      # Update the files with 'git pull'
+      git pull
+    else
+      # We are not in the correct directory
+      echo -ne >&2 "${RED}[ERROR]${NS}: Error chaning directories to '$dotfilesDir'\n"
+      return 1
+    fi
+  fi
+
+  # Clean up by chaning back to the original directory
+  builtin cd "$originalDir" || return 1
 }
