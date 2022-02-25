@@ -8,6 +8,11 @@
 # |                                                                         | #
 # | To re-run the setup wizard and reset this config file,                  | #
 # | re-run: i3-config-wizard.                                               | #
+# |                                                                         | #
+# +-------------------------------------------------------------------------+ #
+# | @version: 1.0                                                           | #
+# |                                                                         | #
+# | @author: Martin Cox                                                     | #
 # +=========================================================================+ #
 # | CONFIG  VERSION |   i3  VERSION   |  FEH  VERSION  |  LIGHTDM  VERSION  | #
 # +-----------------+-----------------+----------------+--------------------+ #
@@ -18,18 +23,69 @@
 # |                                                                         | #
 # +-------------------------------------------------------------------------+ #
 ###############################################################################
+#
+# Copyright 2022 by Martin Cox
+#
+#                         All Rights Reserved
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE ABOVE LISTED COPYRIGHT HOLDER(S) BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# Except as contained in this notice, the name(s) of the above copyright
+# holders shall not be used in advertising or otherwise to promote the
+# sale, use or other dealings in this Software without prior written
+# authorization.
+# -----------------------------------------------------------------------------
 
 
-# Set modifier key, (Mod1=<Alt>, Mod4=<Super>)
+# +==================+ #
+# | SET MODIFIER KEY | #
+# +==================+ #
+# | Mod1   |  <Alt>  | #
+# +------------------+ #
+# | Mod2   |<Unknown>| #
+# +------------------+ #
+# | Mod3   |<Unknown>| #
+# +------------------+ #
+# | Mod4   | <Super> | #
+# +------------------+ #
+
 set $mod Mod4
+
+# +------------------+ #
+# | CONFIGURE FONTS  | #
+# +------------------+ #
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
-font pango:dejavu 8
+# Currently not in use. Font for status is set with 'bar {}' and the windows
+# dont' have titles. (For i3-gaps config)
+
+# font pango:dejavu 8
 
 # This font is widely installed, provides lots of unicode glyphs, right-to-left
 # text rendering and scalability on retina/hidpi displays (thanks to pango).
 #font pango:DejaVu Sans Mono 8
+
+# +-------------------+ #
+# | AUTOSTART SCRIPTS | #
+# +-------------------+ #
 
 # Start XDG autostart .desktop files using dex. See also
 # https://wiki.archlinux.org/index.php/XDG_Autostart
@@ -46,18 +102,24 @@ exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 # and nm-applet is a desktop environment-independent system tray GUI for it.
 exec --no-startup-id nm-applet
 
-# ------------------------ #
-# SET WALLPAPER AT STARTUP #
-# ------------------------ #
-exec --no-startup-id feh --bg-fill /usr/share/wallpapers/anime/lake_view.jpg --auto-start
+# +---------------------+ #
+# |  DEFAULT VARIABLES  | #
+# +---------------------+ #
 
+# Set the wallpaper when i3 launches (e.g. at startup
+exec --no-startup-id --auto-start feh --bg-fill "/usr/share/wallpapers/anime/anime_landscape/stop_light-3440x1600.jpg"
 
-# Use pactl to adjust volume in PulseAudio.
-set $refresh_i3status killall -SIGUSR1 i3status
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
-bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
+# +----------------+ #
+# |  KEY BINDINGS  | #
+# +----------------+ #
+
+# -| Use pactl to adjust volume in PulseAudio |- #
+# ---------------------------------------------- #
+#set $refresh_i3status killall -SIGUSR1 i3status
+#bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
+#bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
+#bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+#bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -68,13 +130,22 @@ bindsym $mod+Return exec xterm
 # kill focused window
 bindsym $mod+Shift+q kill
 
-# start dmenu (a program launcher)
-bindsym $mod+d exec --no-startup-id dmenu_run
+# +----------------+ #
+# |  DMENU CONFIG  | #
+# +----------------+ #
 # A more modern dmenu replacement is rofi:
-# bindcode $mod+40 exec "rofi -modi drun,run -show drun"
+# -| bindcode $mod+40 exec "rofi -modi drun,run -show drun"
+#
 # There also is i3-dmenu-desktop which only displays applications shipping a
 # .desktop file. It is a wrapper around dmenu, so you need that installed.
-# bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
+# -| bindcode $mod+40 exec --no-startup-id i3-dmenu-desktop
+
+# Start dmenu (a program launcher)
+bindsym $mod+d exec --no-startup-id dmenu_run
+
+# +--------------------+ #
+# |  END DMENU CONFIG  | #
+# +--------------------+ #
 
 # change focus
 bindsym $mod+j focus left
@@ -163,12 +234,22 @@ bindsym $mod+Shift+8 move container to workspace number $ws8
 bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
 
+# +---------------------+ #
+# |  DEVELOPER OPTIONS  | #
+# +---------------------+ #
+
 # reload the configuration file
 bindsym $mod+Shift+c reload
+
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
 bindsym $mod+Shift+r restart
+
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
+
+# +-------------------------+ #
+# |  END DEVELOPER OPTIONS  | #
+# +-------------------------+ #
 
 # resize window (you can also use the mouse for that)
 mode "resize" {
@@ -197,6 +278,10 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
+# +--------------+ #
+# |  BAR CONFIG  | #
+# +--------------+ #
+
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
 bar {
@@ -205,24 +290,24 @@ bar {
         font pango:FontAwesome 10
 }
 
-# ----------------------- #
-# AUTO-LOCK CONFIGURATION #
-# ----------------------- #
+# +---------------------------+ #
+# |  AUTO-LOCK CONFIGURATION  | #
+# +---------------------------+ #
 
 exec xautolock -detectsleep -time 5 -locker "$HOME/.dotfiles/bin/lk" \
   --notify 30 \
   --notifier "notify-send -u critical -t 10000 -- 'Locking screen in 30 seconds"
 
 
-# ============================================== #
-# ----------| i3 GAPS CONFIGURATIONs |---------- #
-# ============================================== #
-# This is the area for configuring the gaps and  #
-# i3 gaps-specific settings.                     #
-# ---------------------------------------------- #
-# Git with i3-gaps config options
-# https://github.com/Airblader/i3/tree/gaps-next
-
+# +================================================+ #
+# |            i3 GAPS CONFIGURATIONS              | #
+# +================================================+ #
+# | This is the area for configuring the gaps and  | #
+# | i3 gaps-specific settings.                     | #
+# +------------------------------------------------+ #
+# | Git with i3-gaps config options                | #
+# | https://github.com/Airblader/i3/tree/gaps-next | #
+# +------------------------------------------------+ #
 
 # Remove the title bars for windows (gaps don't work with title bars
 for_window [class="^.*"] border pixel 2
@@ -231,13 +316,12 @@ for_window [class="^.*"] border pixel 2
 gaps inner 10
 gaps outer 0
 
-#smart_gaps on
+smart_gaps on
 #smart_borders on
 
-# ------------------ #
-# WORKSPACE SETTINGS #
-# ------------------ #
+# +----------------------+ #
+# |  WORKSPACE SETTINGS  | #
+# +----------------------+ #
 
-# This allows you to toggle between workspaces
-# and use the same shortcut number
+# This allows you to toggle between workspaces and use the same shortcut number
 workspace_auto_back_and_forth yes
