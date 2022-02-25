@@ -63,7 +63,7 @@ subcommand_show() {
   return "$_SPIN_PID"
 
   # Kill the spinner on any signal, including our own exit
-  trap 'kill -9 $_SPIN_PID' $(seq 0 15) >/dev/null 2>&1
+  trap "kill -9 $_SPIN_PID" $(seq 0 15)
 
 }
 
