@@ -259,7 +259,7 @@ os_name=""
 declare -a pkgs_to_install=()
 
 # Whether or not we're running in verbose mode
-silent_mode="enabled"
+silent_mode="disabled"
 
 # Directory containing the config files we're going to
 # be symbolic linking to the ~/ directory
@@ -536,7 +536,6 @@ symlink-files() {
       else
         # Error creating symbolic link
         print-msg "${RED}[error]${NS}: Error creating symbolic link for '$filename'\n"
-        return 1
       fi
     done
   else
@@ -602,36 +601,29 @@ fi
 # CHANGE SHELL TO ZSH #
 # ------------------- #
 
-# echo -ne "Ensuring zsh is installed... "
-
-# sleep 0.5
+echo -ne "Ensuring zsh is installed... "
 
 # # Check to be sure that zsh is already installed
-# if ! is_installed zsh >/dev/null 2>&1; then
-#   # zsh is not installed
-#   echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
-#   exit 1
-# fi
+if ! is_installed zsh >/dev/null 2>&1; then
+  # zsh is not installed
+  echo >&2 -ne "${RED}zsh not currently installed${NS}\n"
+  exit 1
+fi
 
-# echo -ne "${GREEN}[DONE]${NS}: zsh is currently installed\n"
+echo -ne "${GREEN}[DONE]${NS}\n"
 
-#echo -ne "Checking if zsh is set as the shell... "
-
-#sleep 0.5
+echo -ne "Checking if zsh is set as the shell... "
 
 # Check if zsh is the shell already or not
-#if [[ "$(echo $SHELL)" != *"zsh"* ]]; then
-
+if [[ "$(echo $SHELL)" != *"zsh"* ]]; then
   # zsh IS NOT set for the shell yet
-#  echo -ne "${RED}[DONE]${NS}: The current shell is not using zsh\n"
-
-#fi
-
-# ===================
-# Change shell to zsh
-# NOTE: This may require that we exit the shell and start a new one. This would be the final step for the user to perform
-
-# Change source to ~/.zshrc
+  echo -ne "${RED}[DONE]${NS}: The current shell is not using zsh\n"
+  echo -e "Trying running this command to set the default shell to ${ITALIC}'zsh'${NS}:\n\n"
+  echo -e "\t sudo chsh -s \"$(which zsh)\"\n"
+  echo -e "\nThen run this command to start using the ${ITALIC}zshrc${NS} config file\n\n"
+  echo -e "\t . ~/.zshrc"
+  exit 1
+fi
 
 # ------------------------------ #
 # GRACEFULLY EXIT INSTALL SCRIPT #
