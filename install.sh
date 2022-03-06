@@ -347,23 +347,11 @@ is-installed() {
     echo >&2 "$scriptName ${RED}[ERROR]${NS}: Command is required but was not found in arguments"
     return 1
   fi
-
-  print-msg "Checking for presence of '$1'... "
-
-  # Allow time to read the message
-  sleep 0.5
-
   # Check if the command is found or not
   if ! command -v "$1" > /dev/null; then
     # Command is not found on the system
-
-    print-msg "${RED}[ERROR]${NS}: '$1' command not found\n"
-
     return 1
   fi
-
-  print-msg "${GREEN}[DONE]${NS}: '$1' command installed\n"
-
   return 0
 }
 
@@ -555,27 +543,6 @@ parse-args "$@"
 # Possible values: macos, arch, ubuntu, kali or unknown
 os_name=$(get-os-name)
 
-# ------------------ #
-# CHECK DEPENDENCIES #
-# ------------------ #
-
-# Check all required dependencies
-# Check required dependencies for this specific OS we're running on
-
-# Check which method we're going to use to install the packages
-# pacman, yay, apt, brew, npm, curl, etc.
-
-# -------------------- #
-# INSTALL DEPENDENCIES #
-# -------------------- #
-
-# Check if $pkgs_to_install is empty or not
-# --> If it isn't empty, proceed to install the dependencies
-
-# Install missing dependencies
-
-# --> If it is empty, skip and proceed to next step
-
 # ------------------- #
 # RENAME DOTFILES DIR #
 # ------------------- #
@@ -595,6 +562,49 @@ if ! symlink-files; then
   echo -e "${RED}[ERROR]${NS}: Error with the 'symlink-files' function"
   exit 1
 fi
+
+# ------------------ #
+# CHECK DEPENDENCIES #
+# ------------------ #
+
+# Check all required dependencies
+# Check required dependencies for this specific OS we're running on
+
+# Check which method we're going to use to install the packages
+# pacman, yay, apt, brew, npm, curl, etc.
+
+# -------------------- #
+# INSTALL DEPENDENCIES #
+# -------------------- #
+
+checkMacOSVersion() {
+  # Get the current macOS version
+  local fullVersion="$(/usr/bin/sw_vers | awk '/ProductVersion/ { print $2 }')"
+  
+}
+
+# Check if we're on macOS
+if [ "$os_name" = 'macos' ]; then
+  # Check if homebrew is installed already
+  if ! is-installed brew >/dev/null 2>&1; then
+    # Brew is currently not installed
+    print-msg "Brew not currently installed, installing homebrew... "
+
+    # Start the homebrew installation with no user interaction
+    if ! NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+      echo -ne "${RED}[ERROR]${NS}: There was an error with the homebrew installation\n"
+      exit 1
+    fi
+  fi # End - homebrew check
+  
+fi
+
+# Check if $pkgs_to_install is empty or not
+# --> If it isn't empty, proceed to install the dependencies
+
+# Install missing dependencies
+
+# --> If it is empty, skip and proceed to next step
 
 
 # ------------------- #
