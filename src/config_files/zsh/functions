@@ -120,15 +120,10 @@ _s() {
 
   echo -n "Attempting connection to host... "
 
-  # Show a spinning icon to indicate loading
-  # and capture the output as the spinner PID
-  spinner show
-
   # Check which host we're connecting to
   case "$host" in
     'media-pi'|'media'|'m'|'mpi'|'mediapi')
       ssh media-pi
-      spinner stop 
       ;;
     'mbp'|'jamfmbp'|'jamf-mbp'|'jamfmacbookpro'|'jamfpro'|'jmbp')
       ssh jamf-mbp
