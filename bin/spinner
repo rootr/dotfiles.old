@@ -63,6 +63,7 @@ subcommand_show() {
   return "$_SPIN_PID"
 
   # Kill the spinner on any signal, including our own exit
+  # shellcheck disable=SC2064
   trap "kill -9 $_SPIN_PID" $(seq 0 15)
 
 }
@@ -71,12 +72,12 @@ subcommand_show() {
 # Requires that the _SPIN_PID be passed as an argument
 subcommand_stop() {
   # Capture the spinner PID (if still running)
-  local _SPIN_PID=$(ps aux | grep 'dotfiles/bin/spinner show' | awk '{print $2}')
+  local _SPIN_PID=""
+        _SPIN_PID=$(ps aux | grep 'dotfiles/bin/spinner show' | awk '{print $2}')
 
   # Kill the spinner, and exit on failure
-  if ! kill "$(head -1 <<<$_SPIN_PID)"; then
-    echo -e "${RED}[ERROR]${NS}: There was an error killing the spinner process(es)."
-    echo "PID: $_SPIN_PID"
+  if ! kill "$(head -1 <<<"$_SPIN_PID")"; then
+    echo -e "${RED}[ERROR]${NS}: There was an error killing the spinner process."
     return 1
   fi
   return 0
