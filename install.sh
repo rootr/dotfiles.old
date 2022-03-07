@@ -265,6 +265,10 @@ silent_mode="disabled"
 # be symbolic linking to the ~/ directory
 configFilesDir="$HOME/.dotfiles/src/symlinked"
 
+# Location of the install modules directory
+# This dir contains the scripts to install on various different OS's
+installModulesDir="$HOME/.dotfiles/src/install_modules"
+
 # ---------------- #
 # SCRIPT FUNCTIONS #
 # ---------------- #
@@ -577,26 +581,9 @@ fi
 # INSTALL DEPENDENCIES #
 # -------------------- #
 
-checkMacOSVersion() {
-  # Get the current macOS version
-  local fullVersion="$(/usr/bin/sw_vers | awk '/ProductVersion/ { print $2 }')"
-  
-}
-
 # Check if we're on macOS
 if [ "$os_name" = 'macos' ]; then
-  # Check if homebrew is installed already
-  if ! is-installed brew >/dev/null 2>&1; then
-    # Brew is currently not installed
-    print-msg "Brew not currently installed, installing homebrew... "
-
-    # Start the homebrew installation with no user interaction
-    if ! NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
-      echo -ne "${RED}[ERROR]${NS}: There was an error with the homebrew installation\n"
-      exit 1
-    fi
-  fi # End - homebrew check
-  
+  source "$installModulesDir/macOS.sh"
 fi
 
 # Check if $pkgs_to_install is empty or not
